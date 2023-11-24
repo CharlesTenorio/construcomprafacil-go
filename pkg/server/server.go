@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/katana/back-end/construcomprafacil-go/internal/config"
+	"github.com/katana/back-end/orcafacil-go/internal/config"
 )
 
 func NewHTTPServer(r chi.Router, conf *config.Config) *http.Server {

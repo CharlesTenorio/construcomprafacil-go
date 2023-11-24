@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/katana/back-end/construcomprafacil-go/internal/security"
+	"github.com/katana/back-end/orcafacil-go/internal/security"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )

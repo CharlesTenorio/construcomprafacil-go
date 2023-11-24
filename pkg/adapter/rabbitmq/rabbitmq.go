@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/katana/back-end/construcomprafacil-go/internal/config"
-	"github.com/katana/back-end/construcomprafacil-go/internal/config/logger"
+	"github.com/katana/back-end/orcafacil-go/internal/config"
+	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )

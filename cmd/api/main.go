@@ -4,10 +4,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/katana/back-end/construcomprafacil-go/internal/config"
-	"github.com/katana/back-end/construcomprafacil-go/internal/config/logger"
+	"github.com/katana/back-end/orcafacil-go/internal/config"
+	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
 
-	"github.com/katana/back-end/construcomprafacil-go/pkg/server"
+	"github.com/katana/back-end/orcafacil-go/pkg/server"
 
 	"github.com/go-chi/chi/v5"
 )
