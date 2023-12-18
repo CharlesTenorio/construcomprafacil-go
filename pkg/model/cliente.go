@@ -17,6 +17,5 @@ type Cliente struct {
 	DataCadastro  time.Time          `bson:"data" json:"data"`
 	Senha         string             `bson:"senha" json:"senha"`
 	Excluido      string             `bson:"excluido" json:"excluido"`
-	Endereco      []Endereco         `bson:"endereco" json:"endereco"`
 	MeioPagamento []MeioPagamento    `bson:"meioPagamento" json:"meioPagamento"`
 }
