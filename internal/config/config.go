@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -22,19 +23,18 @@ type Config struct {
 }
 
 type MongoDBConfig struct {
-	MDB_URI              string `json:"mdb_uri"`
-	MDB_NAME             string `json:"mdb_name"`
-	MDB_CLIENT           string `json:"mdb_client"`
-	MDB_DELIVERY_ADDRESS string `json:"mdb_delivery_address"`
-	MDB_GRIFE            string `json:"mdb_grife"`
-	MDB_ORDER            string `json:"mdb_order"`
-	MDB_DET_ORDER        string `json:"mdb_det_order"`
-	MDB_PAYMENT          string `json:"mdb_payment"`
-	MDB_PRODUTC          string `json:"mdb_product"`
-	MDB_SUPPLIER         string `json:"mdb_supplier"`
-	MDB_USER             string `json:"mdb_user"`
-
-	MDB_COLLECTION string `json:"mdb_collection"`
+	MDB_URI              string            `json:"mdb_uri"`
+	MDB_NAME             string            `json:"mdb_name"`
+	MDB_CLIENT           string            `json:"mdb_client"`
+	MDB_DELIVERY_ADDRESS string            `json:"mdb_delivery_address"`
+	MDB_GRIFE            string            `json:"mdb_grife"`
+	MDB_ORDER            string            `json:"mdb_order"`
+	MDB_DET_ORDER        string            `json:"mdb_det_order"`
+	MDB_PAYMENT          string            `json:"mdb_payment"`
+	MDB_PRODUTC          string            `json:"mdb_product"`
+	MDB_SUPPLIER         string            `json:"mdb_supplier"`
+	MDB_USER             string            `json:"mdb_user"`
+	MDB_COLLECTIONS      map[string]string `json:"mdb_collections"`
 }
 
 type RedisDBConfig struct {
@@ -113,14 +113,15 @@ func NewConfig() *Config {
 		conf.MDB_NAME = SRV_MDB_NAME
 	}
 
-	SRV_MDB_COLLECTION := os.Getenv("SRV_MDB_COLLECTION")
-	if SRV_MDB_COLLECTION != "" {
-		conf.MDB_COLLECTION = SRV_MDB_COLLECTION
+	SRV_MDB_COLLECTIONS := os.Getenv("SRV_MDB_COLLECTIONS")
+	if SRV_MDB_COLLECTIONS != "" {
+		collectionsMap := parseCollectionsString(SRV_MDB_COLLECTIONS)
+		conf.MDB_COLLECTIONS = collectionsMap
 	}
 
 	SRV_RDB_DSN := os.Getenv("SRV_RDB_DSN")
 	if SRV_RDB_DSN != "" {
-		conf.RedisConfig.RDB_DSN = SRV_MDB_COLLECTION
+		conf.RedisConfig.RDB_DSN = SRV_RDB_DSN
 	}
 
 	if len(conf.RedisConfig.RDB_HOST) > 3 {
@@ -185,12 +186,13 @@ func NewConfig() *Config {
 }
 
 func defaultConf() *Config {
+
 	default_conf := Config{
 		PORT: "8080",
 		MongoDBConfig: MongoDBConfig{
-			MDB_URI:        "mongodb://admin:supersenha@localhost:27017/",
-			MDB_NAME:       "teste_db",
-			MDB_COLLECTION: "hoodid",
+			MDB_URI:         "mongodb://admin:supersenha@localhost:27017/",
+			MDB_NAME:        "teste_db",
+			MDB_COLLECTIONS: make(map[string]string),
 		},
 
 		Mode: DEVELOPER,
@@ -215,6 +217,26 @@ func defaultConf() *Config {
 			PrefetchCount: 1,
 		},
 	}
+	// Adicione as coleções padrão ao mapa MDB_COLLECTIONS
+	defaultCollections := "meiospamentos, categorias, clientes, fornecedores, orcamentos, produtos, compras"
+	collectionsMap := parseCollectionsString(defaultCollections)
+	default_conf.MongoDBConfig.MDB_COLLECTIONS = collectionsMap
 
 	return &default_conf
+}
+
+func parseCollectionsString(collectionsString string) map[string]string {
+	collections := make(map[string]string)
+
+	// Separar a string usando a vírgula como delimitador
+	collectionNames := strings.Split(collectionsString, ",")
+
+	// Adicionar cada nome de coleção ao mapa
+	for _, name := range collectionNames {
+		// Remover espaços em branco ao redor do nome da coleção
+		name = strings.TrimSpace(name)
+		collections[name] = name
+	}
+
+	return collections
 }

@@ -17,9 +17,9 @@ type MongoDBInterface interface {
 }
 
 type mongodb_pool struct {
-	DB           *mongo.Client
-	DBName       string
-	DBCollection string
+	DB            *mongo.Client
+	DBName        string
+	DBCollections map[string]string
 }
 
 var mdbpool = &mongodb_pool{}
@@ -45,9 +45,9 @@ func New(conf *config.Config) MongoDBInterface {
 		}
 
 		mdbpool = &mongodb_pool{
-			DB:           client,
-			DBName:       conf.MDB_NAME,
-			DBCollection: conf.MDB_COLLECTION,
+			DB:            client,
+			DBName:        conf.MDB_NAME,
+			DBCollections: conf.MDB_COLLECTIONS,
 		}
 
 	}

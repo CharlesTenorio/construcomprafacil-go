@@ -25,7 +25,7 @@ type MeioPgDataService struct {
 	mdb mongodb.MongoDBInterface
 }
 
-func NewPeididoService(mongo_connection mongodb.MongoDBInterface) *MeioPgDataService {
+func NewMeioPgService(mongo_connection mongodb.MongoDBInterface) *MeioPgDataService {
 	return &MeioPgDataService{
 		mdb: mongo_connection,
 	}
@@ -51,7 +51,7 @@ func (mpg *MeioPgDataService) Create(ctx context.Context, meiopg model.MeioPagam
 	return &meiopg, nil
 }
 
-func (mpg *MeioPgDataService) Update(ctx context.Context, ID string, meiopg model.MeioPagamento) (bool, error) {
+func (mpg *MeioPgDataService) Update(ctx context.Context, ID string, meiopg *model.MeioPagamento) (bool, error) {
 	collection := mpg.mdb.GetCollection("meiospamentos")
 
 	opts := options.Update().SetUpsert(true)

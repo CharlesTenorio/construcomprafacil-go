@@ -1,4 +1,4 @@
-package meiospg
+package produto
 
 import (
 	"encoding/json"
@@ -8,27 +8,31 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
-	"github.com/katana/back-end/orcafacil-go/pkg/service/meiospg"
+	"github.com/katana/back-end/orcafacil-go/pkg/service/produto"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/katana/back-end/orcafacil-go/pkg/model"
 )
 
-func createMeioPg(service meiospg.MeiosServiceInterface) http.HandlerFunc {
+func createProduto(service produto.ProdutoServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		mpg := &model.MeioPagamento{}
-		nome := r.URL.Query().Get("nome")
+		prd := &model.Produto{}
+		err := json.NewDecoder(r.Body).Decode(&prd)
 
-		if nome == "" {
+		if err != nil {
+			logger.Error("error decoding request body", err)
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+
+		if prd.Nome == "" {
 			http.Error(w, "o Nome do meio de pagamento obrigatorio", http.StatusBadRequest)
 			return
 		}
 
-		mpg.Meiopg = nome
-
-		_, err := service.Create(r.Context(), *mpg)
+		_, err = service.CreateProduto(r.Context(), *prd)
 		if err != nil {
-			logger.Error("erro ao acessar a camada de service do mpg", err)
+			logger.Error("erro ao acessar a camada de service do prd", err)
 			http.Error(w, "Error ou salvar Meio pg"+err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -48,28 +52,29 @@ func createMeioPg(service meiospg.MeiosServiceInterface) http.HandlerFunc {
 	}
 }
 
-func updateMeioPg(service meiospg.MeiosServiceInterface) http.HandlerFunc {
+func updateProduto(service produto.ProdutoServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
+		prd := &model.Produto{}
 		idp := chi.URLParam(r, "id")
-		logger.Info("PEGANDO O PARAMENTRO")
+		err := json.NewDecoder(r.Body).Decode(&prd)
 
-		_, err := service.GetByID(r.Context(), idp)
+		if err != nil {
+			logger.Error("error decoding request body", err)
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+
+		if prd.Nome == "" {
+			http.Error(w, "o Nome do meio de pagamento obrigatorio", http.StatusBadRequest)
+			return
+		}
+
+		_, err = service.GetProdutoByID(r.Context(), idp)
 		if err != nil {
 			http.Error(w, "Meio encontrada", http.StatusNotFound)
 			return
 		}
 
-		mpg := &model.MeioPagamento{}
-		nome := chi.URLParam(r, "nome")
-		logger.Info("PEGANDO O NOME")
-		logger.Info(nome)
-		if nome == "" {
-			http.Error(w, "o Nome do curso e obrigatório", http.StatusBadRequest)
-			return
-		}
-
-		mpg.Meiopg = nome
 		id, err := primitive.ObjectIDFromHex(idp)
 		if err != nil {
 			http.Error(w, "erro ao converter id", http.StatusBadRequest)
@@ -77,10 +82,10 @@ func updateMeioPg(service meiospg.MeiosServiceInterface) http.HandlerFunc {
 			return
 		}
 
-		mpg.ID = id
-		_, err = service.Update(r.Context(), idp, *&mpg)
+		prd.ID = id
+		_, err = service.UpdateProduto(r.Context(), idp, *&prd)
 		if err != nil {
-			logger.Error("erro ao acessar a camada de service do mpg no upd", err)
+			logger.Error("erro ao acessar a camada de service do prd no upd", err)
 			http.Error(w, "Error ao atualizar meio de pagamento", http.StatusInternalServerError)
 			return
 		}
@@ -91,14 +96,14 @@ func updateMeioPg(service meiospg.MeiosServiceInterface) http.HandlerFunc {
 	}
 }
 
-func getByIdMeioPg(service meiospg.MeiosServiceInterface) http.HandlerFunc {
+func getByIdProduto(service produto.ProdutoServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		idp := chi.URLParam(r, "id")
 		logger.Info("PEGANDO O PARAMENTRO NA CONSULTA")
-		result, err := service.GetByID(r.Context(), idp)
+		result, err := service.GetProdutoByID(r.Context(), idp)
 		if err != nil {
-			logger.Error("erro ao acessar a camada de service do mpg no por id", err)
+			logger.Error("erro ao acessar a camada de service do prd no por id", err)
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(`{"MSG": "Meio de pagamento não encontrado", "codigo": 404}`))
 			return
@@ -114,20 +119,20 @@ func getByIdMeioPg(service meiospg.MeiosServiceInterface) http.HandlerFunc {
 	}
 }
 
-func getAllMeioPg(service meiospg.MeiosServiceInterface) http.Handler {
+func getAllProduto(service produto.ProdutoServiceInterface) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		filters := model.FilterMeioPg{
-			Meiopg:  chi.URLParam(r, "nome"),
+		filters := model.FilterProduto{
+			Nome:    chi.URLParam(r, "nome"),
 			Enabled: chi.URLParam(r, "enable"),
 		}
 
 		limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 64)
 		page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 64)
 
-		result, err := service.GetAll(r.Context(), filters, limit, page)
+		result, err := service.GetAllProdutos(r.Context(), filters, limit, page)
 		if err != nil {
-			logger.Error("erro ao acessar a camada de service do mpg no upd", err)
+			logger.Error("erro ao acessar a camada de service do prd no upd", err)
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(`{"MSG": "User not found", "codigo": 404}`))
 			return
