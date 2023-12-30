@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/go-chi/jwtauth"
 )
 
 const (
@@ -20,6 +22,9 @@ type Config struct {
 	RedisConfig    RedisDBConfig `json:"redis_config"`
 	RMQConfig      RMQConfig     `json:"rmq_config"`
 	ConsumerConfig `json:"cconfig"`
+	JWTSecretKey   string `json:"jwt_secret_key"`
+	JWTTokenExp    int    `json:"jwt_token_exp"`
+	TokenAuth      *jwtauth.JWTAuth
 }
 
 type MongoDBConfig struct {
@@ -182,20 +187,32 @@ func NewConfig() *Config {
 		conf.ConsumerConfig.Reconnect.Interval, _ = strconv.Atoi(CC_INTERVAL)
 	}
 
+	SRV_JWT_SECRET_KEY := os.Getenv("SRV_JWT_SECRET_KEY")
+	if SRV_JWT_SECRET_KEY != "" {
+		conf.JWTSecretKey = SRV_JWT_SECRET_KEY
+	}
+
+	SRV_JWT_TOKEN_EXP := os.Getenv("SRV_JWT_TOKEN_EXP")
+	if SRV_JWT_SECRET_KEY != "" {
+		conf.JWTTokenExp, _ = strconv.Atoi(SRV_JWT_TOKEN_EXP)
+	}
+
 	return conf
 }
 
 func defaultConf() *Config {
 
 	default_conf := Config{
-		PORT: "8080",
+		PORT:         "8080",
+		Mode:         DEVELOPER,
+		JWTSecretKey: "RgUkXp2s5v8y/B?E(H+KbPeShVmYq3t6", // "----your-256-bit-secret-here----" length 32
+		JWTTokenExp:  15,
+		// 15m
 		MongoDBConfig: MongoDBConfig{
 			MDB_URI:         "mongodb://admin:supersenha@localhost:27017/",
 			MDB_NAME:        "teste_db",
 			MDB_COLLECTIONS: make(map[string]string),
 		},
-
-		Mode: DEVELOPER,
 
 		RedisConfig: RedisDBConfig{
 			RDB_HOST: "localhost",
@@ -221,6 +238,7 @@ func defaultConf() *Config {
 	defaultCollections := "meiospamentos, categorias, clientes, fornecedores, orcamentos, produtos, compras"
 	collectionsMap := parseCollectionsString(defaultCollections)
 	default_conf.MongoDBConfig.MDB_COLLECTIONS = collectionsMap
+	default_conf.TokenAuth = jwtauth.New("HS256", []byte(default_conf.JWTSecretKey), nil)
 
 	return &default_conf
 }

@@ -14,7 +14,7 @@ type OrcamentoServiceInterface interface {
 	GetAll(ctx context.Context, filters model.FilterOrcamento, limit, page int64) (*model.Paginate, error)
 	GetOrcamentoByID(id primitive.ObjectID) (*model.Orcamento, error)
 	CountPeidoPorClient(cliente_id, start_date, end_date string) ([]bson.M, error)
-	GetByID(ctx context.Context, ID string) (*model.User, error)
+	GetByID(ctx context.Context, ID string) (*model.Usuario, error)
 	Create(ctx context.Context, Orcamento *model.Orcamento) (map[string]interface{}, error)
 	Update(ctx context.Context, ID string, peidodoToChange *model.Orcamento) (bool, error)
 	Delete(ctx context.Context, ID string) (bool, error)

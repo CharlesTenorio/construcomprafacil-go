@@ -1,69 +1,48 @@
 package model
 
 import (
+	"encoding/json"
 	"log"
-	"strings"
 	"time"
 
-	"github.com/katana/back-end/orcafacil-go/internal/security"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type User struct {
-	ID             primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
-	DataType       string             `bson:"data_type" json:"-"`
-	Username       string             `bson:"username" json:"username"`
-	Name           string             `bson:"name" json:"name"`
-	Password       string             `bson:"-" json:"password,omitempty"`
-	HashedPassword string             `bson:"password" json:"-"`
-	Email          string             `bson:"email" json:"email"`
-	Enable         bool               `bson:"enable" json:"enable"`
-	IsLocked       bool               `bson:"is_locked" json:"isLocked"`
-	SuperAdmin     bool               `bson:"super_admin" json:"super_admin"`
-	ChangePassword bool               `bson:"change_password" json:"change_password"`
-	FirstAcccess   bool               `bson:"first_access" json:"first_access"`
-	ExpireAt       string             `bson:"expire_at" json:"expire_at,omitempty"`
-	CreatedAt      string             `bson:"created_at" json:"created_at,omitempty"`
-	UpdatedAt      string             `bson:"updated_at" json:"updated_at,omitempty"`
-	DeletedAt      string             `bson:"deleted_at" json:"deleted_at,omitempty"`
+type UserInterface interface {
+	String() string
 }
 
-type FilterUser struct {
-	Username string
-	Email    string
-	Enable   string
+type Usuario struct {
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	Nome      string             `bson:"name" json:"name"`
+	Email     string             `bson:"email" json:"email"`
+	Senha     string             `bson:"-" json:"password,omitempty"`
+	Enable    bool               `bson:"enable" json:"enable"`
+	CreatedAt string             `bson:"created_at" json:"created_at,omitempty"`
+	UpdatedAt string             `bson:"updated_at" json:"updated_at,omitempty"`
 }
 
-func (u *User) Formatusr() error {
-	u.Name = strings.TrimSpace(u.Name)
-	u.Username = strings.TrimSpace(u.Username)
-	u.Email = strings.TrimSpace(u.Email)
+type FilterUsuario struct {
+	Nome   string
+	Email  string
+	Enable string
+}
 
-	if u.DataType == "create" {
-		passwordHash, err := security.HashedPassword(u.Password)
-		if err != nil {
-			return err
-		}
-		u.HashedPassword = string(passwordHash)
-		return nil
+func (u *Usuario) String() string {
+	data, err := json.Marshal(u)
+
+	if err != nil {
+		log.Println("Error convert User to JSON")
+		log.Println(err.Error())
+		return ""
 	}
-	return nil
+
+	return string(data)
 }
 
-func (u *User) passwordToHash() {
-	if u.Password != "" {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), 10)
-		if err != nil {
-			log.Println("Erro to SetPassWord", err.Error())
-		}
-
-		u.HashedPassword = string(hashedPassword)
-	}
-}
-
-func (u *User) CheckPassword(password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(u.HashedPassword), []byte(password))
+func (u *Usuario) CheckPassword(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(u.Senha), []byte(password))
 	if err != nil {
 		log.Println("Erro to CheckPassword", err.Error())
 		return false
@@ -71,15 +50,25 @@ func (u *User) CheckPassword(password string) bool {
 	return true
 }
 
-func (u *User) PrepareToSave() {
+func NewUsuario(nome, senha, email string) (*Usuario, error) {
 	dt := time.Now().Format(time.RFC3339)
-	u.passwordToHash()
-	u.DataType = "user"
+	if senha != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(senha), 10)
+		if err != nil {
+			log.Println("Erro to SetPassWord", err.Error())
+			return nil, err
+		}
 
-	if u.ID.IsZero() {
-		u.CreatedAt = dt
-		u.UpdatedAt = dt
-	} else {
-		u.UpdatedAt = dt
+		senha = string(hashedPassword)
 	}
+	tmp_user := &Usuario{
+		Nome:      nome,
+		Senha:     senha,
+		Email:     email,
+		Enable:    true,
+		CreatedAt: dt,
+		UpdatedAt: dt,
+	}
+
+	return tmp_user, nil
 }
