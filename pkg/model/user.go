@@ -19,6 +19,7 @@ type Usuario struct {
 	Email     string             `bson:"email" json:"email"`
 	Senha     string             `bson:"senha" json:"senha"`
 	Enable    bool               `bson:"enable" json:"enable"`
+	Role      string             `bson:"role" json:"role"`
 	CreatedAt string             `bson:"created_at" json:"created_at,omitempty"`
 	UpdatedAt string             `bson:"updated_at" json:"updated_at,omitempty"`
 }
@@ -47,7 +48,18 @@ func (u *Usuario) CheckPassword(senha string) bool {
 
 }
 
-func NewUsuario(nome, senha, email string) (*Usuario, error) {
+func (u *Usuario) ValidarRoler(role string) bool {
+	roleMap := map[string]string{
+		"cliente":    "cliente",
+		"fornecedor": "fornecedor",
+		"parceiro":   "parceiro",
+		"admin":      "admin",
+	}
+	_, existe := roleMap[role]
+	return existe
+}
+
+func NewUsuario(nome, senha, email, role string) (*Usuario, error) {
 	dt := time.Now().Format(time.RFC3339)
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(senha), bcrypt.DefaultCost)
@@ -61,6 +73,7 @@ func NewUsuario(nome, senha, email string) (*Usuario, error) {
 		Senha:     string(hashedPassword),
 		Email:     email,
 		Enable:    true,
+		Role:      role,
 		CreatedAt: dt,
 		UpdatedAt: dt,
 	}

@@ -8,6 +8,7 @@ import (
 
 type Cliente struct {
 	ID            primitive.ObjectID `bson:"_id" json:"_id"`
+	IDUsuario     primitive.ObjectID `bson:"user_id " json:"id_usr"`
 	Nome          string             `bson:"nome" json:"nome"`
 	Email         string             `bson:"email" json:"email"`
 	Sexo          string             `bson:"sexo" json:"sexo"`

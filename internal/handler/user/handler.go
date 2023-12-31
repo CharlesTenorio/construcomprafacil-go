@@ -30,6 +30,13 @@ func createUser(service user.UserServiceInterface) http.HandlerFunc {
 			return
 		}
 
+		if !user.ValidarRoler(user.Role) {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(`{"MSG": "Roler  invalida", "codigo": 400}`))
+			return
+
+		}
+
 		userExist, err := service.GetByEmail(r.Context(), user.Email)
 
 		if userExist != nil {
@@ -71,8 +78,15 @@ func updateUser(service user.UserServiceInterface) http.HandlerFunc {
 
 		_, err = service.GetByID(r.Context(), idp)
 		if err != nil {
-			http.Error(w, "Meio encontrada", http.StatusNotFound)
+			http.Error(w, "suario não encontrado", http.StatusNotFound)
 			return
+		}
+
+		if !userToChange.ValidarRoler(userToChange.Role) {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(`{"MSG": "Roler  invalida", "codigo": 400}`))
+			return
+
 		}
 
 		id, err := primitive.ObjectIDFromHex(idp)
@@ -183,11 +197,23 @@ func PegarJwt(service user.UserServiceInterface) http.HandlerFunc {
 			w.Write([]byte(`{"MSG": "Usuáiro não autorizado ", "codigo": 400}`))
 			return
 		}
-		_, tokenString, _ := jwt.Encode(map[string]interface{}{
+
+		// Adiciona a informação da Role ao mapa
+		tokenClaims := map[string]interface{}{
+			"sub":  userExist.ID.String(),
+			"exp":  time.Now().Add(time.Second * time.Duration(jwtExpiresIn)).Unix(),
+			"role": userExist.Role,
+		}
+
+		// Gera o token com as informações incluídas
+		_, tokenString, _ := jwt.Encode(tokenClaims)
+		accessToken := dto.GetJWTOutput{AccessToken: tokenString}
+
+		/*_, tokenString, _ := jwt.Encode(map[string]interface{}{
 			"sub": userExist.ID.String(),
 			"exp": time.Now().Add(time.Second * time.Duration(jwtExpiresIn)).Unix(),
-		})
-		accessToken := dto.GetJWTOutput{AccessToken: tokenString}
+		})*/
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(accessToken)

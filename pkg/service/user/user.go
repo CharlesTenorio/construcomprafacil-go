@@ -144,7 +144,7 @@ func (uds *UserDataService) GetByEmail(ctx context.Context, email string) (user 
 func (uds *UserDataService) Create(ctx context.Context, user *model.Usuario) (*model.Usuario, error) {
 
 	collection := uds.mdb.GetCollection("usuarios")
-	usr, _ := model.NewUsuario(user.Nome, user.Senha, user.Email)
+	usr, _ := model.NewUsuario(user.Nome, user.Senha, user.Email, user.Role)
 	result, err := collection.InsertOne(ctx, usr)
 	if err != nil {
 		log.Println(err.Error())

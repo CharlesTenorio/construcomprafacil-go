@@ -7,6 +7,7 @@ import (
 	"github.com/katana/back-end/orcafacil-go/internal/config"
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
 	hand_categoria "github.com/katana/back-end/orcafacil-go/internal/handler/categoria"
+	hand_fornec "github.com/katana/back-end/orcafacil-go/internal/handler/fornecedor"
 	hand_meiopg "github.com/katana/back-end/orcafacil-go/internal/handler/meiospg"
 	hand_prd "github.com/katana/back-end/orcafacil-go/internal/handler/produto"
 	hand_usr "github.com/katana/back-end/orcafacil-go/internal/handler/user"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/katana/back-end/orcafacil-go/pkg/server"
 	service_categoria "github.com/katana/back-end/orcafacil-go/pkg/service/categoria"
+	service_fornec "github.com/katana/back-end/orcafacil-go/pkg/service/fornecedor"
 	service_meiopg "github.com/katana/back-end/orcafacil-go/pkg/service/meiospg"
 	service_prd "github.com/katana/back-end/orcafacil-go/pkg/service/produto"
 	service_usr "github.com/katana/back-end/orcafacil-go/pkg/service/user"
@@ -37,30 +39,28 @@ func main() {
 	meiopg_service := service_meiopg.NewMeioPgService(mogDbConn)
 	categoria_service := service_categoria.NewCategoriaervice(mogDbConn)
 	prd_service := service_prd.NewProdutoervice(mogDbConn)
+	fornec_service := service_fornec.NewFornecedorervice(mogDbConn)
 	usr_service := service_usr.NewUsuarioservice(mogDbConn)
 
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
-		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
-		AllowedOrigins: []string{"https://*", "http://*"},
-		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: false,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
+		MaxAge:           300,
 	}))
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.WithValue("jwt", conf.TokenAuth))
 	r.Use(middleware.WithValue("JWTTokenExp", conf.JWTTokenExp))
 
-	// Adicione o middleware JwtMiddleware para autenticação JWT
-
 	r.Get("/", healthcheck)
 	hand_meiopg.RegisterMeioPgAPIHandlers(r, meiopg_service)
 	hand_categoria.RegisterCategoriaPIHandlers(r, categoria_service)
 	hand_prd.RegisterProdutoAPIHandlers(r, prd_service)
+	hand_fornec.RegisterFornecedorPIHandlers(r, fornec_service)
 	hand_usr.RegisterUsuarioAPIHandlers(r, usr_service)
 
 	srv := server.NewHTTPServer(r, conf)
