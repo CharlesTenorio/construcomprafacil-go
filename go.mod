@@ -3,6 +3,7 @@ module github.com/katana/back-end/orcafacil-go
 go 1.21.0
 
 require (
+	github.com/go-chi/cors v1.2.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect

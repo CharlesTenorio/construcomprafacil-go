@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/go-chi/jwtauth"
 	"github.com/katana/back-end/orcafacil-go/pkg/adapter/mongodb"
 	"github.com/katana/back-end/orcafacil-go/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
@@ -30,7 +31,9 @@ type UserServiceInterface interface {
 }
 
 type UserDataService struct {
-	mdb mongodb.MongoDBInterface
+	mdb         mongodb.MongoDBInterface
+	Jwt         *jwtauth.JWTAuth
+	JwtExpirado int
 }
 
 func NewUsuarioservice(mongo_connection mongodb.MongoDBInterface) *UserDataService {
@@ -43,9 +46,7 @@ func (uds *UserDataService) GetAll(ctx context.Context, filters model.FilterUsua
 
 	collection := uds.mdb.GetCollection("usuarios")
 
-	query := bson.M{
-		"data_type": "user",
-	}
+	query := bson.M{}
 
 	if filters.Nome != "" || filters.Email != "" || filters.Enable != "" {
 
@@ -143,16 +144,16 @@ func (uds *UserDataService) GetByEmail(ctx context.Context, email string) (user 
 func (uds *UserDataService) Create(ctx context.Context, user *model.Usuario) (*model.Usuario, error) {
 
 	collection := uds.mdb.GetCollection("usuarios")
-
-	result, err := collection.InsertOne(ctx, user)
+	usr, _ := model.NewUsuario(user.Nome, user.Senha, user.Email)
+	result, err := collection.InsertOne(ctx, usr)
 	if err != nil {
 		log.Println(err.Error())
-		return user, err
+		return usr, err
 	}
 
-	user.ID = result.InsertedID.(primitive.ObjectID)
+	usr.ID = result.InsertedID.(primitive.ObjectID)
 
-	return user, nil
+	return usr, nil
 }
 
 func (uds *UserDataService) Update(ctx context.Context, ID string, userToChange *model.Usuario) (bool, error) {

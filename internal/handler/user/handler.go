@@ -9,13 +9,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth"
-	"github.com/katana/back-end/orcafacil-go/internal/config"
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
 	"github.com/katana/back-end/orcafacil-go/internal/dto"
+	"github.com/katana/back-end/orcafacil-go/pkg/model"
 	"github.com/katana/back-end/orcafacil-go/pkg/service/user"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/katana/back-end/orcafacil-go/pkg/model"
 )
 
 func createUser(service user.UserServiceInterface) http.HandlerFunc {
@@ -151,9 +149,11 @@ func getAllUsuario(service user.UserServiceInterface) http.Handler {
 
 func PegarJwt(service user.UserServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var config config.Config
+
 		jwt := r.Context().Value("jwt").(*jwtauth.JWTAuth)
-		jwtExpiresIn := config.JWTTokenExp
+
+		jwtExpiresIn := r.Context().Value("JWTTokenExp").(int)
+		logger.Info("CRIOU O JWTEXPERI")
 
 		var user dto.GetJwtInput
 		err := json.NewDecoder(r.Body).Decode(&user)
@@ -174,15 +174,14 @@ func PegarJwt(service user.UserServiceInterface) http.HandlerFunc {
 
 		if userExist == nil {
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`{"MSG": "Usuáiro não email não cadastrado", "codigo": 400}`))
+			w.Write([]byte(`{"MSG": "Usuáiro  não cadastrado", "codigo": 400}`))
 			return
 		}
 
-		if userExist.CheckPassword(user.Senha) {
-
-		} else {
+		if !userExist.CheckPassword(user.Senha) {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(`{"MSG": "Usuáiro não autorizado ", "codigo": 400}`))
+			return
 		}
 		_, tokenString, _ := jwt.Encode(map[string]interface{}{
 			"sub": userExist.ID.String(),

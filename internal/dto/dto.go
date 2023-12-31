@@ -1,8 +1,8 @@
 package dto
 
 type GetJwtInput struct {
-	Email string `bson:"email" json:"email"`
-	Senha string `bson:"-" json:"password,omitempty"`
+	Email string `json:"email"`
+	Senha string `json:"senha"`
 }
 type GetJWTOutput struct {
 	AccessToken string `json:"access_token"`
