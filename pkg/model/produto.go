@@ -9,12 +9,13 @@ import (
 )
 
 type Produto struct {
-	ID        primitive.ObjectID `bson:"produto_id" json:"produto_id"`
-	Nome      string             `bson:"nome" json:"nome"`
-	Enabled   bool               `bson:"enabled" json:"enabled"`
-	Categoria Categoria          `bson:"categoria" json:"categoria"`
-	CreatedAt string             `bson:"created_at" json:"created_at,omitempty"`
-	UpdatedAt string             `bson:"updated_at" json:"updated_at,omitempty"`
+	ID           primitive.ObjectID `bson:"produto_id" json:"produto_id"`
+	Nome         string             `bson:"nome" json:"nome"`
+	Enabled      bool               `bson:"enabled" json:"enabled"`
+	Categoria    Categoria          `bson:"categoria" json:"categoria"`
+	Subcategoria Subcategoria       `bson:"subcategoria" json:"subcategoria"`
+	CreatedAt    string             `bson:"created_at" json:"created_at,omitempty"`
+	UpdatedAt    string             `bson:"updated_at" json:"updated_at,omitempty"`
 }
 
 func (p Produto) ProtutoTOString() string {

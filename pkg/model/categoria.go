@@ -9,11 +9,12 @@ import (
 )
 
 type Categoria struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	Nome      string             `bson:"nome" json:"nome"`
-	Enabled   bool               `bson:"enabled" json:"enabled"`
-	CreatedAt string             `bson:"created_at" json:"created_at,omitempty"`
-	UpdatedAt string             `bson:"updated_at" json:"updated_at,omitempty"`
+	ID            primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	Nome          string             `bson:"nome" json:"nome"`
+	Enabled       bool               `bson:"enabled" json:"enabled"`
+	Subcategorias []Subcategoria     `bson:"subcategorias" json:"subcategorias"`
+	CreatedAt     string             `bson:"created_at" json:"created_at,omitempty"`
+	UpdatedAt     string             `bson:"updated_at" json:"updated_at,omitempty"`
 }
 
 func (c Categoria) CategoriaConvet() string {

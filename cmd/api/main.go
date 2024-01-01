@@ -7,18 +7,23 @@ import (
 	"github.com/katana/back-end/orcafacil-go/internal/config"
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
 	hand_categoria "github.com/katana/back-end/orcafacil-go/internal/handler/categoria"
+	hand_cliente "github.com/katana/back-end/orcafacil-go/internal/handler/cliente"
 	hand_fornec "github.com/katana/back-end/orcafacil-go/internal/handler/fornecedor"
 	hand_meiopg "github.com/katana/back-end/orcafacil-go/internal/handler/meiospg"
 	hand_prd "github.com/katana/back-end/orcafacil-go/internal/handler/produto"
 	hand_usr "github.com/katana/back-end/orcafacil-go/internal/handler/user"
+
 	"github.com/katana/back-end/orcafacil-go/pkg/adapter/mongodb"
 
 	"github.com/katana/back-end/orcafacil-go/pkg/server"
+	service_usr "github.com/katana/back-end/orcafacil-go/pkg/service/user"
+
 	service_categoria "github.com/katana/back-end/orcafacil-go/pkg/service/categoria"
+	service_cliente "github.com/katana/back-end/orcafacil-go/pkg/service/cliente"
+
 	service_fornec "github.com/katana/back-end/orcafacil-go/pkg/service/fornecedor"
 	service_meiopg "github.com/katana/back-end/orcafacil-go/pkg/service/meiospg"
 	service_prd "github.com/katana/back-end/orcafacil-go/pkg/service/produto"
-	service_usr "github.com/katana/back-end/orcafacil-go/pkg/service/user"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -36,11 +41,12 @@ func main() {
 	conf := config.NewConfig()
 
 	mogDbConn := mongodb.New(conf)
+	usr_service := service_usr.NewUsuarioservice(mogDbConn)
 	meiopg_service := service_meiopg.NewMeioPgService(mogDbConn)
 	categoria_service := service_categoria.NewCategoriaervice(mogDbConn)
 	prd_service := service_prd.NewProdutoervice(mogDbConn)
 	fornec_service := service_fornec.NewFornecedorervice(mogDbConn)
-	usr_service := service_usr.NewUsuarioservice(mogDbConn)
+	cli_service := service_cliente.NewClienteervice(mogDbConn)
 
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
@@ -57,11 +63,12 @@ func main() {
 	r.Use(middleware.WithValue("JWTTokenExp", conf.JWTTokenExp))
 
 	r.Get("/", healthcheck)
+	hand_usr.RegisterUsuarioAPIHandlers(r, usr_service)
 	hand_meiopg.RegisterMeioPgAPIHandlers(r, meiopg_service)
 	hand_categoria.RegisterCategoriaPIHandlers(r, categoria_service)
 	hand_prd.RegisterProdutoAPIHandlers(r, prd_service)
 	hand_fornec.RegisterFornecedorPIHandlers(r, fornec_service)
-	hand_usr.RegisterUsuarioAPIHandlers(r, usr_service)
+	hand_cliente.RegisterClientePIHandlers(r, cli_service)
 
 	srv := server.NewHTTPServer(r, conf)
 

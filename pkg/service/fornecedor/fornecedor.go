@@ -20,6 +20,7 @@ type FornecedorServiceInterface interface {
 	GetByID(ctx context.Context, ID string) (*model.Fornecedor, error)
 	GetAll(ctx context.Context, filters model.FilterFornecedor, limit, page int64) (*model.Paginate, error)
 	ListPrdFornecedor(ctx context.Context, ID string, limit, page int64) (*model.Paginate, error)
+	GetByCnpj(ctx context.Context, Cnpj string) bool
 }
 
 type FornecedorDataService struct {
@@ -40,6 +41,7 @@ func (cat *FornecedorDataService) Create(ctx context.Context, Fornecedor model.F
 	Fornecedor.Enabled = true
 	Fornecedor.CreatedAt = dt
 	Fornecedor.UpdatedAt = dt
+	Fornecedor.ID = primitive.NewObjectID()
 
 	result, err := collection.InsertOne(ctx, Fornecedor)
 	if err != nil {
@@ -207,4 +209,20 @@ func (cat *FornecedorDataService) ListPrdFornecedor(ctx context.Context, fornece
 	paginate.Paginate(produtosPaginados)
 
 	return paginate, nil
+}
+
+func (cat *FornecedorDataService) GetByCnpj(ctx context.Context, Cnpj string) bool {
+
+	collection := cat.mdb.GetCollection("fornecedores")
+
+	// Utilizando o método CountDocuments para verificar a existência
+	filter := bson.D{{Key: "cnpj", Value: Cnpj}}
+	count, err := collection.CountDocuments(ctx, filter)
+	if err != nil {
+		logger.Error("erro ao consultar Fornecedor", err)
+		return false
+	}
+
+	// Se count for maior que zero, o fornecedor existe
+	return count > 0
 }

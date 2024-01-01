@@ -40,6 +40,7 @@ func (p *ProdutoDataService) CreateProduto(ctx context.Context, Produto model.Pr
 	Produto.Enabled = true
 	Produto.CreatedAt = dt
 	Produto.UpdatedAt = dt
+	Produto.ID = primitive.NewObjectID()
 
 	result, err := collection.InsertOne(ctx, Produto)
 	if err != nil {

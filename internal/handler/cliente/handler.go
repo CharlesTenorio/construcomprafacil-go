@@ -1,4 +1,4 @@
-package fornecedor
+package cliente
 
 import (
 	"encoding/json"
@@ -8,18 +8,18 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
-	"github.com/katana/back-end/orcafacil-go/pkg/service/fornecedor"
+	"github.com/katana/back-end/orcafacil-go/pkg/service/cliente"
 	"github.com/katana/back-end/orcafacil-go/pkg/service/validation"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/katana/back-end/orcafacil-go/pkg/model"
 )
 
-func createFornecedor(service fornecedor.FornecedorServiceInterface) http.HandlerFunc {
+func createCliente(service cliente.ClienteServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		Fornecedor := &model.Fornecedor{}
+		Cliente := &model.Cliente{}
 
-		err := json.NewDecoder(r.Body).Decode(&Fornecedor)
+		err := json.NewDecoder(r.Body).Decode(&Cliente)
 
 		if err != nil {
 			logger.Error("error decoding request body", err)
@@ -27,21 +27,28 @@ func createFornecedor(service fornecedor.FornecedorServiceInterface) http.Handle
 			return
 		}
 
-		if !validation.IsCNPJValid(Fornecedor.CNPJ) {
-			http.Error(w, "Cnpj incorreto", http.StatusBadRequest)
+		switch Cliente.Tipo {
+		case "Fisica":
+			if !validarCPF(w, *Cliente) {
+				return
+			}
+		case "Juridica":
+			if !validarCNPJ(w, *Cliente) {
+				return
+			}
+		default:
+			http.Error(w, "Tipo de cliente inválido", http.StatusBadRequest)
 			return
 		}
 
-		if service.GetByCnpj(r.Context(), Fornecedor.CNPJ) {
-			http.Error(w, "CNPJ já exite", http.StatusBadRequest)
+		if service.GetByDocumento(r.Context(), Cliente.Documento) {
+			http.Error(w, "Documento já cadastrado", http.StatusBadRequest)
 			return
-
 		}
-
-		_, err = service.Create(r.Context(), *Fornecedor)
+		_, err = service.Create(r.Context(), *Cliente)
 		if err != nil {
 			logger.Error("erro ao acessar a camada de service do mpg", err)
-			http.Error(w, "Error ou salvar Fornecedor"+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Error ou salvar Cliente"+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -60,7 +67,7 @@ func createFornecedor(service fornecedor.FornecedorServiceInterface) http.Handle
 	}
 }
 
-func updateFornecedor(service fornecedor.FornecedorServiceInterface) http.HandlerFunc {
+func updateCliente(service cliente.ClienteServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		idp := chi.URLParam(r, "id")
@@ -68,11 +75,11 @@ func updateFornecedor(service fornecedor.FornecedorServiceInterface) http.Handle
 
 		_, err := service.GetByID(r.Context(), idp)
 		if err != nil {
-			http.Error(w, "Fornecedor nao encontrada", http.StatusNotFound)
+			http.Error(w, "Cliente nao encontrada", http.StatusNotFound)
 			return
 		}
 
-		mpg := &model.Fornecedor{}
+		mpg := &model.Cliente{}
 		nome := chi.URLParam(r, "nome")
 		logger.Info("PEGANDO O NOME")
 		logger.Info(nome)
@@ -103,16 +110,16 @@ func updateFornecedor(service fornecedor.FornecedorServiceInterface) http.Handle
 	}
 }
 
-func getByIdFornecedor(service fornecedor.FornecedorServiceInterface) http.HandlerFunc {
+func getByIdCliente(service cliente.ClienteServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		idp := chi.URLParam(r, "id")
 		logger.Info("PEGANDO O PARAMENTRO NA CONSULTA")
 		result, err := service.GetByID(r.Context(), idp)
 		if err != nil {
-			logger.Error("erro ao acessar a camada de service da Fornecedor no por id", err)
+			logger.Error("erro ao acessar a camada de service da Cliente no por id", err)
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`{"MSG": "Fornecedor não encontrada", "codigo": 404}`))
+			w.Write([]byte(`{"MSG": "Cliente não encontrada", "codigo": 404}`))
 			return
 		}
 
@@ -126,10 +133,10 @@ func getByIdFornecedor(service fornecedor.FornecedorServiceInterface) http.Handl
 	}
 }
 
-func getAllFornecedor(service fornecedor.FornecedorServiceInterface) http.Handler {
+func getAllCliente(service cliente.ClienteServiceInterface) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		filters := model.FilterFornecedor{
+		filters := model.FilterCliente{
 			Nome:    chi.URLParam(r, "nome"),
 			Enabled: chi.URLParam(r, "enable"),
 		}
@@ -158,30 +165,19 @@ func getAllFornecedor(service fornecedor.FornecedorServiceInterface) http.Handle
 		}
 	})
 }
-func getProdutosPorFornecedor(service fornecedor.FornecedorServiceInterface) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
 
-		idp := chi.URLParam(r, "id")
-		logger.Info("passando ID CAT No handle")
-		logger.Info(idp)
-
-		limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 64)
-		page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 64)
-
-		result, err := service.ListPrdFornecedor(r.Context(), idp, limit, page)
-		if err != nil {
-			logger.Error("erro ao acessar a camada de service da Fornecedor no por id", err)
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`{"MSG": "Fornecedor não encontrada", "codigo": 404}`))
-			return
-		}
-
-		err = json.NewEncoder(w).Encode(result)
-		if err != nil {
-			logger.Error("erro ao converter em json", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"MSG": "Error to parse Bot to JSON", "codigo": 500}`))
-			return
-		}
+func validarCPF(w http.ResponseWriter, cli model.Cliente) bool {
+	if !validation.IsCPFValid(cli.Documento) {
+		http.Error(w, "CPF inválido", http.StatusBadRequest)
+		return false
 	}
+	return true
+}
+
+func validarCNPJ(w http.ResponseWriter, cli model.Cliente) bool {
+	if !validation.IsCNPJValid(cli.Documento) {
+		http.Error(w, "CNPJ inválido", http.StatusBadRequest)
+		return false
+	}
+	return true
 }

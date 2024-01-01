@@ -20,6 +20,7 @@ type CategoriaServiceInterface interface {
 	GetByID(ctx context.Context, ID string) (*model.Categoria, error)
 	GetAll(ctx context.Context, filters model.FilterCategoria, limit, page int64) (*model.Paginate, error)
 	ListPrd(ctx context.Context, ID string, limit, page int64) (*model.Paginate, error)
+	ListSubcategoria(ctx context.Context, ID string, limit, page int64) (*model.Paginate, error)
 }
 
 type CategoriaDataService struct {
@@ -214,6 +215,47 @@ func (cat *CategoriaDataService) ListPrd(ctx context.Context, categoriaID string
 	}
 
 	pagination.Paginate(result)
+
+	return pagination, nil
+}
+
+func (cat *CategoriaDataService) ListSubcategoria(ctx context.Context, categoriaID string, limit, page int64) (*model.Paginate, error) {
+	collection := cat.mdb.GetCollection("categorias")
+
+	categoriaObjectID, err := primitive.ObjectIDFromHex(categoriaID)
+	if err != nil {
+		logger.Error("Error parsing ObjectIDFromHex for categoria", err)
+		return nil, err
+	}
+
+	// Consulta a categoria especificada
+	filter := bson.D{{Key: "_id", Value: categoriaObjectID}}
+	projection := bson.D{{Key: "subcategorias", Value: 1}}
+
+	var categoria model.Categoria
+	err = collection.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&categoria)
+	if err != nil {
+		logger.Error("Error while querying categoria", err)
+		return nil, err
+	}
+
+	// Filtra subcategorias com campo Enabled igual a true
+	subcategorias := make([]model.Subcategoria, 0)
+	for _, subcategoria := range categoria.Subcategorias {
+		if subcategoria.Enabled {
+			// Remova os campos que você não deseja retornar
+			subcategoria.Enabled = false
+			subcategoria.CreatedAt = ""
+			subcategoria.UpdatedAt = ""
+			subcategorias = append(subcategorias, subcategoria)
+		}
+	}
+
+	// Paginação
+	count := int64(len(subcategorias))
+	pagination := model.NewPaginate(limit, page, count)
+
+	pagination.Paginate(subcategorias)
 
 	return pagination, nil
 }
