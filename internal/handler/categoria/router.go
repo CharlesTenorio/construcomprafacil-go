@@ -12,7 +12,7 @@ func RegisterCategoriaPIHandlers(r chi.Router, service categoria.CategoriaServic
 		r.Post("/add", createCategoria(service))
 		r.Put("/update/{id}/{nome}", updateCategoria(service))
 		r.Get("/getbyid/{id}", getByIdCategoria(service))
-		r.Get("/listprd/{id}", getProdutosPorCategoria(service))
+
 		r.Get("/all", func(w http.ResponseWriter, r *http.Request) {
 			handler := getAllCategoria(service)
 			handler.ServeHTTP(w, r)

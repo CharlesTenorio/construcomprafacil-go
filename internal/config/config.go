@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/jwtauth"
 )
@@ -25,6 +26,8 @@ type Config struct {
 	JWTSecretKey   string `json:"jwt_secret_key"`
 	JWTTokenExp    int    `json:"jwt_token_exp"`
 	TokenAuth      *jwtauth.JWTAuth
+	DataInicial    time.Time
+	DataFinal      time.Time
 }
 
 type MongoDBConfig struct {
@@ -195,6 +198,26 @@ func NewConfig() *Config {
 	SRV_JWT_TOKEN_EXP := os.Getenv("SRV_JWT_TOKEN_EXP")
 	if SRV_JWT_SECRET_KEY != "" {
 		conf.JWTTokenExp, _ = strconv.Atoi(SRV_JWT_TOKEN_EXP)
+	}
+
+	SRV_DATA_INICIAL := os.Getenv("SRV_DATA_INICIAL")
+	if SRV_DATA_INICIAL != "" {
+		dataInicial, err := time.Parse(time.RFC3339, SRV_DATA_INICIAL)
+		if err != nil {
+			fmt.Println("Erro ao converter a string para time.Time:", err)
+
+		}
+		conf.DataInicial = dataInicial
+	}
+
+	SRV_DATA_FINAL := os.Getenv("SRV_DATA_INICIAL")
+	if SRV_DATA_FINAL != "" {
+		dataFinal, err := time.Parse(time.RFC3339, SRV_DATA_FINAL)
+		if err != nil {
+			fmt.Println("Erro ao converter a string para time.Time:", err)
+
+		}
+		conf.DataFinal = dataFinal
 	}
 
 	return conf

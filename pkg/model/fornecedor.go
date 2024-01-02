@@ -18,7 +18,7 @@ type Fornecedor struct {
 	Excluido      string             `bson:"excluido" json:"excluido"`
 	Endereco      []Endereco         `bson:"endereco" json:"endereco"`
 	MeioPagamento []MeioPagamento    `bson:"meio_pagamento" json:"meio_pagamento"`
-	Produto       []Produto          `bson:"produto" json:"produto"`
+	Produto       []Categoria        `bson:"produto" json:"produto"`
 	Enabled       bool               `bson:"enabled" json:"enabled"`
 	CreatedAt     string             `bson:"created_at" json:"created_at,omitempty"`
 	UpdatedAt     string             `bson:"updated_at" json:"updated_at,omitempty"`

@@ -1,4 +1,4 @@
-package subSubcategoria
+package subcategoria
 
 import (
 	"context"
@@ -79,7 +79,7 @@ func (cat *SubcategoriaDataService) Update(ctx context.Context, ID string, subca
 
 	_, err = collection.UpdateOne(ctx, filter, update, opts)
 	if err != nil {
-		logger.Error("Error while updating data", err)
+		logger.Error("Erro ao atuilziar subcategoria", err)
 
 		return false, err
 	}

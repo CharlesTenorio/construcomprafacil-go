@@ -42,6 +42,10 @@ func (cat *CategoriaDataService) Create(ctx context.Context, categoria model.Cat
 	categoria.CreatedAt = dt
 	categoria.UpdatedAt = dt
 
+	for i := range categoria.Subcategorias {
+		categoria.Subcategorias[i].CreatedAt = dt
+	}
+
 	result, err := collection.InsertOne(ctx, categoria)
 	if err != nil {
 		logger.Error("erro salvar  categoria", err)

@@ -19,7 +19,7 @@ type FornecedorServiceInterface interface {
 	Update(ctx context.Context, ID string, meioToChange *model.Fornecedor) (bool, error)
 	GetByID(ctx context.Context, ID string) (*model.Fornecedor, error)
 	GetAll(ctx context.Context, filters model.FilterFornecedor, limit, page int64) (*model.Paginate, error)
-	ListPrdFornecedor(ctx context.Context, ID string, limit, page int64) (*model.Paginate, error)
+
 	GetByCnpj(ctx context.Context, Cnpj string) bool
 }
 
@@ -159,56 +159,6 @@ func (cat *FornecedorDataService) GetAll(ctx context.Context, filters model.Filt
 	pagination.Paginate(result)
 
 	return pagination, nil
-}
-
-func (cat *FornecedorDataService) ListPrdFornecedor(ctx context.Context, fornecedorID string, limit, page int64) (*model.Paginate, error) {
-
-	collection := cat.mdb.GetCollection("fornecedores")
-
-	objectID, err := primitive.ObjectIDFromHex(fornecedorID)
-	if err != nil {
-		return nil, err
-	}
-
-	filter := bson.D{{Key: "_id", Value: objectID}}
-
-	// Executa a consulta
-	var fornecedor model.Fornecedor
-	err = collection.FindOne(ctx, filter).Decode(&fornecedor)
-	if err != nil {
-		return nil, err
-	}
-
-	// Filtra os produtos habilitados
-	var produtosHabilitados []model.Produto
-	for _, produto := range fornecedor.Produto {
-		if produto.Enabled {
-			produtosHabilitados = append(produtosHabilitados, produto)
-		}
-	}
-
-	// Paginação dos produtos habilitados associados ao fornecedor
-	paginate := model.NewPaginate(limit, page, int64(len(produtosHabilitados)))
-
-	// Calcula os índices de início e fim para a fatia de produtos
-	start := (paginate.Page - 1) * paginate.Limit
-	end := start + paginate.Limit
-
-	// Evita índices fora do alcance
-	if start > paginate.Total {
-		start = paginate.Total
-	}
-	if end > paginate.Total {
-		end = paginate.Total
-	}
-
-	// Obtem a fatia de produtos para a página atual
-	produtosPaginados := produtosHabilitados[start:end]
-
-	// Atualiza a estrutura de Paginate com os dados paginados
-	paginate.Paginate(produtosPaginados)
-
-	return paginate, nil
 }
 
 func (cat *FornecedorDataService) GetByCnpj(ctx context.Context, Cnpj string) bool {
