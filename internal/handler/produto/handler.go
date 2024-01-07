@@ -1,4 +1,4 @@
-package subcategoria
+package produto
 
 import (
 	"encoding/json"
@@ -8,21 +8,22 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
+	"github.com/katana/back-end/orcafacil-go/internal/dto"
 	"github.com/katana/back-end/orcafacil-go/pkg/service/categoria"
-	"github.com/katana/back-end/orcafacil-go/pkg/service/subcategoria"
+	"github.com/katana/back-end/orcafacil-go/pkg/service/produto"
 
 	"github.com/katana/back-end/orcafacil-go/pkg/model"
 )
 
-func createSubCategoria(service subcategoria.SubcategoriaServiceInterface) http.HandlerFunc {
+func createProduto(service produto.ProdutoServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		sbucategoria := &model.Subcategoria{}
+		produto := &model.Produto{}
 
 		type Response struct {
 			Message string `json:"message"`
 		}
 		var msg Response
-		err := json.NewDecoder(r.Body).Decode(&sbucategoria)
+		err := json.NewDecoder(r.Body).Decode(&produto)
 
 		if err != nil {
 			logger.Error("error decoding request body", err)
@@ -30,7 +31,7 @@ func createSubCategoria(service subcategoria.SubcategoriaServiceInterface) http.
 			return
 		}
 
-		if sbucategoria.Nome == "" {
+		if produto.Nome == "" {
 			msg = Response{
 				Message: "Nome e obrigatorio",
 			}
@@ -38,7 +39,7 @@ func createSubCategoria(service subcategoria.SubcategoriaServiceInterface) http.
 			return
 		}
 
-		_, err = service.Create(r.Context(), *sbucategoria)
+		_, err = service.Create(r.Context(), *produto)
 		if err != nil {
 			logger.Error("erro ao acessar a camada de service do mpg", err)
 			http.Error(w, "Error ou salvar categoria"+err.Error(), http.StatusInternalServerError)
@@ -56,7 +57,7 @@ func createSubCategoria(service subcategoria.SubcategoriaServiceInterface) http.
 	}
 }
 
-func updateSubCategoria(service subcategoria.SubcategoriaServiceInterface) http.HandlerFunc {
+func updateProduto(service produto.ProdutoServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		type Response struct {
@@ -70,8 +71,8 @@ func updateSubCategoria(service subcategoria.SubcategoriaServiceInterface) http.
 			w.Write([]byte(`{"MSG": "Client Not Found", "codigo": 404}`))
 			return
 		}
-		subcategoriaToChang := &model.Subcategoria{}
-		err = json.NewDecoder(r.Body).Decode(&subcategoriaToChang)
+		ProdutoToChang := &model.Produto{}
+		err = json.NewDecoder(r.Body).Decode(&ProdutoToChang)
 
 		if err != nil {
 			logger.Error("error decoding request body", err)
@@ -87,7 +88,7 @@ func updateSubCategoria(service subcategoria.SubcategoriaServiceInterface) http.
 			return
 		}
 
-		if subcategoriaToChang.Nome == "" {
+		if ProdutoToChang.Nome == "" {
 			msg = Response{
 				Message: "Nome e obrigatorio",
 			}
@@ -95,11 +96,11 @@ func updateSubCategoria(service subcategoria.SubcategoriaServiceInterface) http.
 			return
 		}
 
-		_, err = service.Update(r.Context(), clientID, *&subcategoriaToChang)
+		_, err = service.Update(r.Context(), clientID, *&ProdutoToChang)
 		if err != nil {
 			logger.Error("erro ao acessar a camada de service do mpg no upd", err)
 			msg = Response{
-				Message: "Erro ao atualizar subcategoria" + err.Error(),
+				Message: "Erro ao atualizar Produto" + err.Error(),
 			}
 			http.Error(w, msg.Message, http.StatusBadRequest)
 			return
@@ -112,7 +113,7 @@ func updateSubCategoria(service subcategoria.SubcategoriaServiceInterface) http.
 	}
 }
 
-func getByIdSubCategoria(service subcategoria.SubcategoriaServiceInterface) http.HandlerFunc {
+func getByIdProduto(service produto.ProdutoServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		idp := chi.URLParam(r, "id")
@@ -121,7 +122,7 @@ func getByIdSubCategoria(service subcategoria.SubcategoriaServiceInterface) http
 		if err != nil {
 			logger.Error("erro ao acessar a camada de service da categoria no por id", err)
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`{"MSG": "SubCategoria não encontrada", "codigo": 404}`))
+			w.Write([]byte(`{"MSG": "Produto não encontrada", "codigo": 404}`))
 			return
 		}
 
@@ -135,12 +136,14 @@ func getByIdSubCategoria(service subcategoria.SubcategoriaServiceInterface) http
 	}
 }
 
-func getAllSubCategoria(service subcategoria.SubcategoriaServiceInterface) http.Handler {
+func getAllProduto(service produto.ProdutoServiceInterface) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		nome := r.URL.Query().Get("nome")
+		enable := r.URL.Query().Get("enable")
 
-		filters := model.FilterSubcategoria{
-			Nome:    chi.URLParam(r, "nome"),
-			Enabled: chi.URLParam(r, "enable"),
+		filters := model.FilterProduto{
+			Nome:    nome,
+			Enabled: enable,
 		}
 
 		limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 64)
@@ -168,7 +171,7 @@ func getAllSubCategoria(service subcategoria.SubcategoriaServiceInterface) http.
 	})
 }
 
-func getProdutosPorSubCategoria(service subcategoria.SubcategoriaServiceInterface) http.HandlerFunc {
+func getListaProdutos(service categoria.CategoriaServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		idp := chi.URLParam(r, "id")
@@ -178,7 +181,7 @@ func getProdutosPorSubCategoria(service subcategoria.SubcategoriaServiceInterfac
 		limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 64)
 		page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 64)
 
-		result, err := service.ListPrd(r.Context(), idp, limit, page)
+		result, err := service.ListProduto(r.Context(), idp, limit, page)
 		if err != nil {
 			logger.Error("erro ao acessar a camada de service da categoria no por id", err)
 			w.WriteHeader(http.StatusNotFound)
@@ -196,30 +199,50 @@ func getProdutosPorSubCategoria(service subcategoria.SubcategoriaServiceInterfac
 	}
 }
 
-func getListaSubCategorias(service categoria.CategoriaServiceInterface) http.HandlerFunc {
+func updateProdutoAddFornecedor(service produto.ProdutoServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		idp := chi.URLParam(r, "id")
-		logger.Info("passando ID CAT No handle")
-		logger.Info(idp)
-
-		limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 64)
-		page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 64)
-
-		result, err := service.ListSubcategoria(r.Context(), idp, limit, page)
+		type Response struct {
+			Message string `json:"message"`
+		}
+		var msg Response
+		clientID := chi.URLParam(r, "id")
+		_, err := service.GetByID(r.Context(), clientID)
 		if err != nil {
-			logger.Error("erro ao acessar a camada de service da categoria no por id", err)
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`{"MSG": "Categoria não encontrada", "codigo": 404}`))
+			w.Write([]byte(`{"MSG": "Client Not Found", "codigo": 404}`))
+			return
+		}
+		fornecedor := []dto.FornecedoresEmPrd{}
+		err = json.NewDecoder(r.Body).Decode(&fornecedor)
+
+		if err != nil {
+			logger.Error("error decoding request body", err)
+			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
 
-		err = json.NewEncoder(w).Encode(result)
-		if err != nil {
-			logger.Error("erro ao converter em json", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"MSG": "Error to parse Bot to JSON", "codigo": 500}`))
+		if clientID == "" {
+			msg = Response{
+				Message: "id e obrigatorio",
+			}
+			http.Error(w, msg.Message, http.StatusBadRequest)
 			return
 		}
+
+		_, err = service.AddFornecedroes(r.Context(), clientID, &fornecedor)
+		if err != nil {
+			logger.Error("erro ao acessar a camada de service do mpg no upd", err)
+			msg = Response{
+				Message: "Erro ao atualizar Produto" + err.Error(),
+			}
+			http.Error(w, msg.Message, http.StatusBadRequest)
+			return
+
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{"MSG": "Success", "codigo": 1})
 	}
 }

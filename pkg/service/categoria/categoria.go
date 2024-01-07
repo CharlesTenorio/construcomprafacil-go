@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
+	"github.com/katana/back-end/orcafacil-go/internal/dto"
 	"github.com/katana/back-end/orcafacil-go/pkg/adapter/mongodb"
 	"github.com/katana/back-end/orcafacil-go/pkg/model"
+	"github.com/katana/back-end/orcafacil-go/pkg/service/validation"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -19,8 +21,7 @@ type CategoriaServiceInterface interface {
 	Update(ctx context.Context, ID string, meioToChange *model.Categoria) (bool, error)
 	GetByID(ctx context.Context, ID string) (*model.Categoria, error)
 	GetAll(ctx context.Context, filters model.FilterCategoria, limit, page int64) (*model.Paginate, error)
-	ListPrd(ctx context.Context, ID string, limit, page int64) (*model.Paginate, error)
-	ListSubcategoria(ctx context.Context, ID string, limit, page int64) (*model.Paginate, error)
+	ListProduto(ctx context.Context, ID string, limit, page int64) (*model.Paginate, error)
 }
 
 type CategoriaDataService struct {
@@ -37,13 +38,14 @@ func (cat *CategoriaDataService) Create(ctx context.Context, categoria model.Cat
 	collection := cat.mdb.GetCollection("categorias")
 
 	dt := time.Now().Format(time.RFC3339)
-
+	categoria.ID = primitive.NewObjectID()
 	categoria.Enabled = true
 	categoria.CreatedAt = dt
 	categoria.UpdatedAt = dt
+	categoria.Nome = validation.CareString(categoria.Nome)
 
-	for i := range categoria.Subcategorias {
-		categoria.Subcategorias[i].CreatedAt = dt
+	for i := range categoria.Produtos {
+		categoria.Produtos[i].Enabled = true
 	}
 
 	result, err := collection.InsertOne(ctx, categoria)
@@ -73,7 +75,7 @@ func (cat *CategoriaDataService) Update(ctx context.Context, ID string, categori
 
 		{Key: "_id", Value: objectID},
 	}
-
+	categoria.Nome = validation.CareString(categoria.Nome)
 	update := bson.D{{Key: "$set",
 		Value: bson.D{
 			{Key: "nome", Value: categoria.Nome},
@@ -164,66 +166,7 @@ func (cat *CategoriaDataService) GetAll(ctx context.Context, filters model.Filte
 	return pagination, nil
 }
 
-func (cat *CategoriaDataService) ListPrd(ctx context.Context, categoriaID string, limit, page int64) (*model.Paginate, error) {
-	collection := cat.mdb.GetCollection("produtos")
-
-	categoriaObjectID, err := primitive.ObjectIDFromHex(categoriaID)
-	if err != nil {
-		logger.Error("Error parsing ObjectIDFromHex for categoria", err)
-		return nil, err
-	}
-
-	// Consulta produtos na categoria especificada
-	query := bson.M{"categoria._id": categoriaObjectID}
-
-	curr, err := collection.Find(ctx, query)
-	if err != nil {
-		logger.Error("Error while querying produtos", err)
-		return nil, err
-	}
-	defer curr.Close(ctx)
-
-	/*var produtos []*model.Produto
-	for curr.Next(ctx) {
-		produto := &model.Produto{}
-		if err := curr.Decode(produto); err != nil {
-			logger.Error("Error decoding produto", err)
-			return nil, err
-		}
-		produtos = append(produtos, produto)
-	}
-
-	return produtos, nil*/
-
-	count, err := collection.CountDocuments(ctx, query, &options.CountOptions{})
-
-	if err != nil {
-		logger.Error("erro ao consultar todas as Produtos", err)
-		return nil, err
-	}
-
-	pagination := model.NewPaginate(limit, page, count)
-
-	curr, err = collection.Find(ctx, query, pagination.GetPaginatedOpts())
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]*model.Produto, 0)
-	for curr.Next(ctx) {
-		p := &model.Produto{}
-		if err := curr.Decode(p); err != nil {
-			logger.Error("erro ao consulta todas as Produtos", err)
-		}
-		result = append(result, p)
-	}
-
-	pagination.Paginate(result)
-
-	return pagination, nil
-}
-
-func (cat *CategoriaDataService) ListSubcategoria(ctx context.Context, categoriaID string, limit, page int64) (*model.Paginate, error) {
+func (cat *CategoriaDataService) ListProduto(ctx context.Context, categoriaID string, limit, page int64) (*model.Paginate, error) {
 	collection := cat.mdb.GetCollection("categorias")
 
 	categoriaObjectID, err := primitive.ObjectIDFromHex(categoriaID)
@@ -234,7 +177,7 @@ func (cat *CategoriaDataService) ListSubcategoria(ctx context.Context, categoria
 
 	// Consulta a categoria especificada
 	filter := bson.D{{Key: "_id", Value: categoriaObjectID}}
-	projection := bson.D{{Key: "subcategorias", Value: 1}}
+	projection := bson.D{{Key: "Produtos", Value: 1}}
 
 	var categoria model.Categoria
 	err = collection.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&categoria)
@@ -243,23 +186,22 @@ func (cat *CategoriaDataService) ListSubcategoria(ctx context.Context, categoria
 		return nil, err
 	}
 
-	// Filtra subcategorias com campo Enabled igual a true
-	subcategorias := make([]model.Subcategoria, 0)
-	for _, subcategoria := range categoria.Subcategorias {
-		if subcategoria.Enabled {
+	// Filtra Produtos com campo Enabled igual a true
+	Produtos := make([]dto.ProdutosEmCategorias, 0)
+	for _, Produto := range categoria.Produtos {
+		if Produto.Enabled {
 			// Remova os campos que você não deseja retornar
-			subcategoria.Enabled = false
-			subcategoria.CreatedAt = ""
-			subcategoria.UpdatedAt = ""
-			subcategorias = append(subcategorias, subcategoria)
+			Produto.Enabled = false
+
+			Produtos = append(Produtos, Produto)
 		}
 	}
 
 	// Paginação
-	count := int64(len(subcategorias))
+	count := int64(len(Produtos))
 	pagination := model.NewPaginate(limit, page, count)
 
-	pagination.Paginate(subcategorias)
+	pagination.Paginate(Produtos)
 
 	return pagination, nil
 }

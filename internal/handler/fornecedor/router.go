@@ -12,6 +12,7 @@ func RegisterFornecedorPIHandlers(r chi.Router, service fornecedor.FornecedorSer
 		r.Post("/add", createFornecedor(service))
 		r.Put("/update/{id}/{nome}", updateFornecedor(service))
 		r.Get("/getbyid/{id}", getByIdFornecedor(service))
+		r.Patch("/addprd/{id}", addProduto(service))
 
 		r.Get("/all", func(w http.ResponseWriter, r *http.Request) {
 			handler := getAllFornecedor(service)

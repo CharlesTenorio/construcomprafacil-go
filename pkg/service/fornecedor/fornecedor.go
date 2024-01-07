@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
+	"github.com/katana/back-end/orcafacil-go/internal/dto"
 	"github.com/katana/back-end/orcafacil-go/pkg/adapter/mongodb"
 	"github.com/katana/back-end/orcafacil-go/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
@@ -19,8 +20,9 @@ type FornecedorServiceInterface interface {
 	Update(ctx context.Context, ID string, meioToChange *model.Fornecedor) (bool, error)
 	GetByID(ctx context.Context, ID string) (*model.Fornecedor, error)
 	GetAll(ctx context.Context, filters model.FilterFornecedor, limit, page int64) (*model.Paginate, error)
-
 	GetByCnpj(ctx context.Context, Cnpj string) bool
+	AddProdutos(ctx context.Context, ID string, prds []dto.ProdutosEmFornecedor) (bool, error)
+	UpdFornecedorParaPrd(ctx context.Context, idPrd string, produto *model.Produto) (bool, error)
 }
 
 type FornecedorDataService struct {
@@ -33,8 +35,8 @@ func NewFornecedorervice(mongo_connection mongodb.MongoDBInterface) *FornecedorD
 	}
 }
 
-func (cat *FornecedorDataService) Create(ctx context.Context, Fornecedor model.Fornecedor) (*model.Fornecedor, error) {
-	collection := cat.mdb.GetCollection("fornecedores")
+func (fornec *FornecedorDataService) Create(ctx context.Context, Fornecedor model.Fornecedor) (*model.Fornecedor, error) {
+	collection := fornec.mdb.GetCollection("fornecedores")
 
 	dt := time.Now().Format(time.RFC3339)
 
@@ -54,8 +56,8 @@ func (cat *FornecedorDataService) Create(ctx context.Context, Fornecedor model.F
 	return &Fornecedor, nil
 }
 
-func (cat *FornecedorDataService) Update(ctx context.Context, ID string, Fornecedor *model.Fornecedor) (bool, error) {
-	collection := cat.mdb.GetCollection("fornecedores")
+func (fornec *FornecedorDataService) Update(ctx context.Context, ID string, Fornecedor *model.Fornecedor) (bool, error) {
+	collection := fornec.mdb.GetCollection("fornecedores")
 
 	opts := options.Update().SetUpsert(true)
 
@@ -89,9 +91,9 @@ func (cat *FornecedorDataService) Update(ctx context.Context, ID string, Fornece
 	return true, nil
 }
 
-func (cat *FornecedorDataService) GetByID(ctx context.Context, ID string) (*model.Fornecedor, error) {
+func (fornec *FornecedorDataService) GetByID(ctx context.Context, ID string) (*model.Fornecedor, error) {
 
-	collection := cat.mdb.GetCollection("fornecedores")
+	collection := fornec.mdb.GetCollection("fornecedores")
 
 	Fornecedor := &model.Fornecedor{}
 
@@ -115,8 +117,8 @@ func (cat *FornecedorDataService) GetByID(ctx context.Context, ID string) (*mode
 	return Fornecedor, nil
 }
 
-func (cat *FornecedorDataService) GetAll(ctx context.Context, filters model.FilterFornecedor, limit, page int64) (*model.Paginate, error) {
-	collection := cat.mdb.GetCollection("fornecedores")
+func (fornec *FornecedorDataService) GetAll(ctx context.Context, filters model.FilterFornecedor, limit, page int64) (*model.Paginate, error) {
+	collection := fornec.mdb.GetCollection("fornecedores")
 
 	query := bson.M{}
 
@@ -149,11 +151,11 @@ func (cat *FornecedorDataService) GetAll(ctx context.Context, filters model.Filt
 
 	result := make([]*model.Fornecedor, 0)
 	for curr.Next(ctx) {
-		cat := &model.Fornecedor{}
-		if err := curr.Decode(cat); err != nil {
+		fornec := &model.Fornecedor{}
+		if err := curr.Decode(fornec); err != nil {
 			logger.Error("erro ao consulta todas as Fornecedors", err)
 		}
-		result = append(result, cat)
+		result = append(result, fornec)
 	}
 
 	pagination.Paginate(result)
@@ -161,9 +163,9 @@ func (cat *FornecedorDataService) GetAll(ctx context.Context, filters model.Filt
 	return pagination, nil
 }
 
-func (cat *FornecedorDataService) GetByCnpj(ctx context.Context, Cnpj string) bool {
+func (fornec *FornecedorDataService) GetByCnpj(ctx context.Context, Cnpj string) bool {
 
-	collection := cat.mdb.GetCollection("fornecedores")
+	collection := fornec.mdb.GetCollection("fornecedores")
 
 	// Utilizando o método CountDocuments para verificar a existência
 	filter := bson.D{{Key: "cnpj", Value: Cnpj}}
@@ -175,4 +177,84 @@ func (cat *FornecedorDataService) GetByCnpj(ctx context.Context, Cnpj string) bo
 
 	// Se count for maior que zero, o fornecedor existe
 	return count > 0
+}
+
+func (fornec *FornecedorDataService) AddProdutos(ctx context.Context, ID string, prds []dto.ProdutosEmFornecedor) (bool, error) {
+	collection := fornec.mdb.GetCollection("fornecedores")
+
+	fornecedorID, err := primitive.ObjectIDFromHex(ID)
+	if err != nil {
+		logger.Error("Erro ao converter ID para ObjectID", err)
+		return false, err
+	}
+
+	update := bson.D{{Key: "$push",
+		Value: bson.D{
+			{Key: "produtos", Value: bson.D{
+				{Key: "$each", Value: prds},
+			}},
+		},
+	}}
+
+	filter := bson.D{
+		{Key: "_id", Value: fornecedorID},
+	}
+
+	// Atualize os produtos do fornecedor
+	_, err = collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		logger.Error("Erro ao adicionar produtos ao fornecedor", err)
+		return false, err
+	}
+
+	// Atualize a lista de fornecedores associados a cada produto
+	for _, prd := range prds {
+		produto := &model.Produto{
+			Fornecedores: []dto.FornecedoresEmPrd{{ID: ID}}, // Adicione o ID do fornecedor à lista de fornecedores do produto
+		}
+
+		_, err := fornec.UpdFornecedorParaPrd(ctx, prd.ID, produto)
+		if err != nil {
+			logger.Error("Erro ao atualizar lista de fornecedores do produto", err)
+			return false, err
+		}
+	}
+
+	return true, nil
+}
+
+func (fornec *FornecedorDataService) UpdFornecedorParaPrd(ctx context.Context, idPrd string, produto *model.Produto) (bool, error) {
+	collection := fornec.mdb.GetCollection("produtos")
+
+	opts := options.Update().SetUpsert(true)
+
+	objectID, err := primitive.ObjectIDFromHex(idPrd)
+	if err != nil {
+
+		logger.Error("Error to parse ObjectIDFromHex", err)
+		return false, err
+	}
+
+	filter := bson.D{
+
+		{Key: "_id", Value: objectID},
+	}
+
+	update := bson.D{{Key: "$set",
+		Value: bson.D{
+
+			{Key: "fornecedores", Value: produto.Fornecedores},
+			{Key: "updated_at", Value: time.Now().Format(time.RFC3339)},
+		},
+	}}
+
+	_, err = collection.UpdateOne(ctx, filter, update, opts)
+	if err != nil {
+		logger.Error("Erro ao atuilziar Produto", err)
+
+		return false, err
+	}
+
+	return true, nil
+
 }

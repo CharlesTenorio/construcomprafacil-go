@@ -5,23 +5,24 @@ import (
 	"time"
 
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
+	"github.com/katana/back-end/orcafacil-go/internal/dto"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Fornecedor struct {
-	ID            primitive.ObjectID `bson:"_id" json:"_id"`
-	IDUsuario     primitive.ObjectID `bson:"user_id " json:"id_usr"`
-	Nome          string             `bson:"nome" json:"nome"`
-	Telefone      string             `bson:"telefone" json:"telefone"`
-	CNPJ          string             `bson:"cnpj" json:"cnpj"`
-	Raio          string             `bson:"raio" json:"raio"`
-	Excluido      string             `bson:"excluido" json:"excluido"`
-	Endereco      []Endereco         `bson:"endereco" json:"endereco"`
-	MeioPagamento []MeioPagamento    `bson:"meio_pagamento" json:"meio_pagamento"`
-	Produto       []Categoria        `bson:"produto" json:"produto"`
-	Enabled       bool               `bson:"enabled" json:"enabled"`
-	CreatedAt     string             `bson:"created_at" json:"created_at,omitempty"`
-	UpdatedAt     string             `bson:"updated_at" json:"updated_at,omitempty"`
+	ID            primitive.ObjectID         `bson:"_id" json:"_id"`
+	IDUsuario     primitive.ObjectID         `bson:"user_id " json:"id_usr"`
+	Nome          string                     `bson:"nome" json:"nome"`
+	Telefone      string                     `bson:"telefone" json:"telefone"`
+	CNPJ          string                     `bson:"cnpj" json:"cnpj"`
+	Raio          string                     `bson:"raio" json:"raio"`
+	Excluido      string                     `bson:"excluido" json:"excluido"`
+	Endereco      []Endereco                 `bson:"endereco" json:"endereco"`
+	MeioPagamento []MeioPagamento            `bson:"meio_pagamento" json:"meio_pagamento"`
+	Produtos      []dto.ProdutosEmFornecedor `json:"produtos"`
+	Enabled       bool                       `bson:"enabled" json:"enabled"`
+	CreatedAt     string                     `bson:"created_at" json:"created_at,omitempty"`
+	UpdatedAt     string                     `bson:"updated_at" json:"updated_at,omitempty"`
 }
 
 func (f Fornecedor) FornecedorConvet() string {

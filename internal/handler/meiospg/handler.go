@@ -17,28 +17,36 @@ import (
 func createMeioPg(service meiospg.MeiosServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mpg := &model.MeioPagamento{}
-		nome := r.URL.Query().Get("nome")
 
-		if nome == "" {
-			http.Error(w, "o Nome do meio de pagamento obrigatorio", http.StatusBadRequest)
+		type Response struct {
+			Message string `json:"message"`
+		}
+		var msg Response
+		err := json.NewDecoder(r.Body).Decode(&mpg)
+
+		if err != nil {
+			logger.Error("error decoding request body", err)
+			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
 
-		mpg.Meiopg = nome
+		if mpg.Meiopg == "" {
+			msg = Response{
+				Message: "meio_pg e obrigatorio",
+			}
+			http.Error(w, msg.Message, http.StatusBadRequest)
+			return
+		}
 
-		_, err := service.Create(r.Context(), *mpg)
+		_, err = service.Create(r.Context(), *mpg)
 		if err != nil {
 			logger.Error("erro ao acessar a camada de service do mpg", err)
 			http.Error(w, "Error ou salvar Meio pg"+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		type Response struct {
-			Message string `json:"message"`
-		}
-
 		// Crie uma instância da estrutura com a mensagem desejada.
-		msg := Response{
+		msg = Response{
 			Message: "Dados gravados com sucesso",
 		}
 

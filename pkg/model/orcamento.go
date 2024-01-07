@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -43,7 +42,6 @@ type Orcamento struct {
 		} `bson:"meioPagamento" json:"meioPagamento"`
 	} `bson:"fornecedor" json:"fornecedor"`
 }
-
 type FilterOrcamento struct {
 	OrcamentoID       string
 	ClienteID         string
@@ -57,37 +55,4 @@ type OrcamentoResult struct {
 	OrcamentoID   string
 	MeioPagamento string
 	Total         float64
-}
-
-// Função para calcular o total e a forma de pagamento com base no ID do fornecedor
-func calcularTotalEFormaPagamento(orcamento Orcamento, fornecedorID primitive.ObjectID) (string, float64, error) {
-	var formaPagamento string
-	var total float64
-
-	// Encontrar o fornecedor pelo ID
-	var fornecedorIndex int
-	for i, fornecedor := range orcamento.Fornecedor {
-		if fornecedor.FornecedorID == fornecedorID {
-			fornecedorIndex = i
-			break
-		}
-	}
-
-	// Verificar se o fornecedor foi encontrado
-	if fornecedorIndex >= len(orcamento.Fornecedor) {
-		return "", 0, fmt.Errorf("Fornecedor não encontrado")
-	}
-
-	// Calcular o total com base nos produtos
-	for _, produto := range orcamento.Fornecedor[fornecedorIndex].Produto {
-		subtotal := float64(produto.Quantidade) * produto.Valor
-		subtotal -= produto.Desconto
-		total += subtotal
-	}
-
-	// Recuperar a forma de pagamento
-	// (assumindo que há apenas um meio de pagamento por fornecedor)
-	formaPagamento = orcamento.Fornecedor[fornecedorIndex].MeioPagamento[0].MeioPagamentoID.Hex()
-
-	return formaPagamento, total, nil
 }

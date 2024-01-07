@@ -258,7 +258,7 @@ func defaultConf() *Config {
 		},
 	}
 	// Adicione as coleções padrão ao mapa MDB_COLLECTIONS
-	defaultCollections := "meiospamentos, categorias, clientes, fornecedores, orcamentos, produtos, compras"
+	defaultCollections := "meiospagamentos, categorias, clientes, fornecedores, orcamentos, produtos, compras"
 	collectionsMap := parseCollectionsString(defaultCollections)
 	default_conf.MongoDBConfig.MDB_COLLECTIONS = collectionsMap
 	default_conf.TokenAuth = jwtauth.New("HS256", []byte(default_conf.JWTSecretKey), nil)

@@ -9,6 +9,7 @@ import (
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
 	"github.com/katana/back-end/orcafacil-go/pkg/adapter/mongodb"
 	"github.com/katana/back-end/orcafacil-go/pkg/model"
+	"github.com/katana/back-end/orcafacil-go/pkg/service/validation"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -32,11 +33,14 @@ func NewMeioPgService(mongo_connection mongodb.MongoDBInterface) *MeioPgDataServ
 }
 
 func (mpg *MeioPgDataService) Create(ctx context.Context, meiopg model.MeioPagamento) (*model.MeioPagamento, error) {
-	collection := mpg.mdb.GetCollection("meiospamentos")
+	collection := mpg.mdb.GetCollection("meiospagamentos")
+
+	meiopg.ID = primitive.NewObjectID()
 
 	dt := time.Now().Format(time.RFC3339)
 
 	meiopg.Enabled = true
+	meiopg.Meiopg = validation.CareString(meiopg.Meiopg)
 	meiopg.CreatedAt = dt
 	meiopg.UpdatedAt = dt
 
@@ -52,7 +56,7 @@ func (mpg *MeioPgDataService) Create(ctx context.Context, meiopg model.MeioPagam
 }
 
 func (mpg *MeioPgDataService) Update(ctx context.Context, ID string, meiopg *model.MeioPagamento) (bool, error) {
-	collection := mpg.mdb.GetCollection("meiospamentos")
+	collection := mpg.mdb.GetCollection("meiospagamentos")
 
 	opts := options.Update().SetUpsert(true)
 
@@ -88,7 +92,7 @@ func (mpg *MeioPgDataService) Update(ctx context.Context, ID string, meiopg *mod
 
 func (mpg *MeioPgDataService) GetByID(ctx context.Context, ID string) (*model.MeioPagamento, error) {
 
-	collection := mpg.mdb.GetCollection("meiospamentos")
+	collection := mpg.mdb.GetCollection("meiospagamentos")
 
 	meiopg := &model.MeioPagamento{}
 
@@ -113,7 +117,7 @@ func (mpg *MeioPgDataService) GetByID(ctx context.Context, ID string) (*model.Me
 }
 
 func (mpg *MeioPgDataService) GetAll(ctx context.Context, filters model.FilterMeioPg, limit, page int64) (*model.Paginate, error) {
-	collection := mpg.mdb.GetCollection("meiospamentos")
+	collection := mpg.mdb.GetCollection("meiospagamentos")
 
 	query := bson.M{}
 

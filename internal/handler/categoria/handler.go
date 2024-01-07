@@ -158,34 +158,6 @@ func getAllCategoria(service categoria.CategoriaServiceInterface) http.Handler {
 	})
 }
 
-func getProdutosPorCategoria(service categoria.CategoriaServiceInterface) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		idp := chi.URLParam(r, "id")
-		logger.Info("passando ID CAT No handle")
-		logger.Info(idp)
-
-		limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 64)
-		page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 64)
-
-		result, err := service.ListPrd(r.Context(), idp, limit, page)
-		if err != nil {
-			logger.Error("erro ao acessar a camada de service da categoria no por id", err)
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`{"MSG": "Categoria não encontrada", "codigo": 404}`))
-			return
-		}
-
-		err = json.NewEncoder(w).Encode(result)
-		if err != nil {
-			logger.Error("erro ao converter em json", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"MSG": "Error to parse Bot to JSON", "codigo": 500}`))
-			return
-		}
-	}
-}
-
 func getListaSubCategorias(service categoria.CategoriaServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -196,7 +168,7 @@ func getListaSubCategorias(service categoria.CategoriaServiceInterface) http.Han
 		limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 64)
 		page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 64)
 
-		result, err := service.ListSubcategoria(r.Context(), idp, limit, page)
+		result, err := service.ListProduto(r.Context(), idp, limit, page)
 		if err != nil {
 			logger.Error("erro ao acessar a camada de service da categoria no por id", err)
 			w.WriteHeader(http.StatusNotFound)

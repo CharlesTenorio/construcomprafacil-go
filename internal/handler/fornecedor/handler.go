@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
+	"github.com/katana/back-end/orcafacil-go/internal/dto"
 	"github.com/katana/back-end/orcafacil-go/pkg/service/fornecedor"
 	"github.com/katana/back-end/orcafacil-go/pkg/service/validation"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -158,30 +159,37 @@ func getAllFornecedor(service fornecedor.FornecedorServiceInterface) http.Handle
 		}
 	})
 }
-func getProdutosPorFornecedor(service fornecedor.FornecedorServiceInterface) http.HandlerFunc {
+
+func addProduto(service fornecedor.FornecedorServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		idp := chi.URLParam(r, "id")
-		logger.Info("passando ID CAT No handle")
-		logger.Info(idp)
-
-		limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 64)
-		page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 64)
-
-		result, err := service.ListPrdFornecedor(r.Context(), idp, limit, page)
+		_, err := service.GetByID(r.Context(), idp)
 		if err != nil {
-			logger.Error("erro ao acessar a camada de service da Fornecedor no por id", err)
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`{"MSG": "Fornecedor não encontrada", "codigo": 404}`))
+			http.Error(w, "Fornecedor nao encontrada", http.StatusNotFound)
 			return
 		}
 
-		err = json.NewEncoder(w).Encode(result)
-		if err != nil {
-			logger.Error("erro ao converter em json", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"MSG": "Error to parse Bot to JSON", "codigo": 500}`))
+		// Decodifique os dados do corpo da requisição
+		// Decodifique os dados do corpo da requisição
+		var payload dto.ProdutosPayload
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			logger.Error("Erro ao decodificar dados do corpo da requisição", err)
+			http.Error(w, "Erro ao decodificar dados do corpo da requisição", http.StatusBadRequest)
 			return
 		}
+
+		// Adicione a lista de produtos ao fornecedor
+		_, err = service.AddProdutos(r.Context(), idp, payload.Produtos)
+		if err != nil {
+			logger.Error("Erro ao adicionar produtos ao fornecedor", err)
+			http.Error(w, "Erro ao adicionar produtos ao fornecedor", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{"MSG": "Produtos adicionados com sucesso", "codigo": 1})
+
 	}
 }

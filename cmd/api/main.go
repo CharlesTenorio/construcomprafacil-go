@@ -10,7 +10,7 @@ import (
 	hand_cliente "github.com/katana/back-end/orcafacil-go/internal/handler/cliente"
 	hand_fornec "github.com/katana/back-end/orcafacil-go/internal/handler/fornecedor"
 	hand_meiopg "github.com/katana/back-end/orcafacil-go/internal/handler/meiospg"
-	hand_subcategoria "github.com/katana/back-end/orcafacil-go/internal/handler/subcategoria"
+	hand_produto "github.com/katana/back-end/orcafacil-go/internal/handler/produto"
 	hand_usr "github.com/katana/back-end/orcafacil-go/internal/handler/user"
 
 	"github.com/katana/back-end/orcafacil-go/pkg/adapter/mongodb"
@@ -20,7 +20,7 @@ import (
 
 	service_categoria "github.com/katana/back-end/orcafacil-go/pkg/service/categoria"
 	service_cliente "github.com/katana/back-end/orcafacil-go/pkg/service/cliente"
-	service_subcategoria "github.com/katana/back-end/orcafacil-go/pkg/service/subcategoria"
+	service_produto "github.com/katana/back-end/orcafacil-go/pkg/service/produto"
 
 	service_fornec "github.com/katana/back-end/orcafacil-go/pkg/service/fornecedor"
 	service_meiopg "github.com/katana/back-end/orcafacil-go/pkg/service/meiospg"
@@ -44,7 +44,7 @@ func main() {
 	usr_service := service_usr.NewUsuarioservice(mogDbConn)
 	meiopg_service := service_meiopg.NewMeioPgService(mogDbConn)
 	categoria_service := service_categoria.NewCategoriaervice(mogDbConn)
-	sub_categoria_service := service_subcategoria.NewSubcategoriaervice(mogDbConn)
+	prd_service := service_produto.NewProdutoervice(mogDbConn)
 
 	fornec_service := service_fornec.NewFornecedorervice(mogDbConn)
 	cli_service := service_cliente.NewClienteervice(mogDbConn)
@@ -66,7 +66,7 @@ func main() {
 	r.Get("/", healthcheck)
 	hand_usr.RegisterUsuarioAPIHandlers(r, usr_service)
 	hand_meiopg.RegisterMeioPgAPIHandlers(r, meiopg_service)
-	hand_subcategoria.RegisterSbuCategoriaPIHandlers(r, sub_categoria_service)
+	hand_produto.RegisterPrdPIHandlers(r, prd_service)
 	hand_categoria.RegisterCategoriaPIHandlers(r, categoria_service)
 
 	hand_fornec.RegisterFornecedorPIHandlers(r, fornec_service)
