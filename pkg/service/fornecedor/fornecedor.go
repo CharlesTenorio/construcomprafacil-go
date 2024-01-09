@@ -187,8 +187,8 @@ func (fornec *FornecedorDataService) AddProdutos(ctx context.Context, ID string,
 		logger.Error("Erro ao converter ID para ObjectID", err)
 		return false, err
 	}
-
-	update := bson.D{{Key: "$push",
+	// push
+	update := bson.D{{Key: "$addToSet",
 		Value: bson.D{
 			{Key: "produtos", Value: bson.D{
 				{Key: "$each", Value: prds},
