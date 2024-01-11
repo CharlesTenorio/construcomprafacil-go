@@ -20,6 +20,7 @@ type Orcamento struct {
 	GrupoDeCliente       []dto.ClienteGrupoDto `bson:"listaCliente" json:"listaCliente"`
 	EnderecoCliente      []Endereco            `bson:"enderecoCliente" json:"enderecoCliente"`
 	Fornecedores         []dto.FornecedorDto   `bson:"fornecedor" json:"fornecedor"`
+	ProdutosContacao     []dto.ProdutoDto      `bson:"produtosContacao" json:"produtosContacao"`
 	Enabled              bool                  `bson:"enabled" json:"enabled"`
 	CreatedAt            string                `bson:"created_at" json:"created_at,omitempty"`
 	UpdatedAt            string                `bson:"updated_at" json:"updated_at,omitempty"`

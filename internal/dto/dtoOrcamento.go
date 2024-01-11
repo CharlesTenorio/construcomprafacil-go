@@ -38,8 +38,20 @@ type MeioPagamentoDto struct {
 	MeioPagamentoID primitive.ObjectID `bson:"meioPagamento_id" json:"meioPagamento_id"`
 }
 
-type OrcamentoFila struct {
+type OrcamentoFilaPrdFornecedor struct {
 	IdOrcamento primitive.ObjectID `bson:"id_orcamento" json:"id_orcamento"`
 	Fornecedor  FornecedorDto      `bson:"prd_enviado_fornecedor" json:"prd_enviado_fornecedor"`
 	StatusFila  string             `bson:"status" json:"status"`
+}
+
+type ProdutoContacaoDTO struct {
+	ProdutoID  primitive.ObjectID `bson:"produto_id" json:"produto_id"`
+	Nome       string             `bson:"nome_produto" json:"nome_produto"`
+	Quantidade int                `bson:"quantidade" json:"quantidade"`
+}
+
+type ProdutoEnviadoParaFilaDeOrcamentoDTO struct {
+	IdOrcamento primitive.ObjectID   `bson:"id_orcamento" json:"id_orcamento"`
+	Produtos    []ProdutoContacaoDTO `bson:"produtos" json:"produtos"`
+	DataEnvio   time.Time            `bson:"dataEnvio" json:"dataEnvio"`
 }

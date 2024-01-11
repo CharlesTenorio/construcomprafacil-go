@@ -13,7 +13,7 @@ import (
 	"github.com/katana/back-end/orcafacil-go/pkg/model"
 )
 
-func createorcamento(service orcamento.OrcamentoServiceInterface) http.HandlerFunc {
+func createOrcamento(service orcamento.OrcamentoServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		orcamento := &model.Orcamento{}
 
@@ -47,7 +47,7 @@ func createorcamento(service orcamento.OrcamentoServiceInterface) http.HandlerFu
 	}
 }
 
-func updateorcamento(service orcamento.OrcamentoServiceInterface) http.HandlerFunc {
+func updateOrcamento(service orcamento.OrcamentoServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		orcamento := &model.Orcamento{}
@@ -81,7 +81,7 @@ func updateorcamento(service orcamento.OrcamentoServiceInterface) http.HandlerFu
 	}
 }
 
-func getByIdorcamento(service orcamento.OrcamentoServiceInterface) http.HandlerFunc {
+func getByIdOrcamento(service orcamento.OrcamentoServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		idp := chi.URLParam(r, "id")
@@ -104,7 +104,7 @@ func getByIdorcamento(service orcamento.OrcamentoServiceInterface) http.HandlerF
 	}
 }
 
-func getAllorcamento(service orcamento.OrcamentoServiceInterface) http.Handler {
+func getAllOrcamento(service orcamento.OrcamentoServiceInterface) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		filters := model.FilterOrcamento{

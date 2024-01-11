@@ -8,12 +8,12 @@ import (
 )
 
 func RegisterOrcamentoPIHandlers(r chi.Router, service orcamento.OrcamentoServiceInterface) {
-	r.Route("/api/v1/cliente", func(r chi.Router) {
-		r.Post("/add", createorcamento(service))
-		r.Put("/update/{id}/{nome}", updateorcamento(service))
-		r.Get("/getbyid/{id}", getByIdorcamento(service))
+	r.Route("/api/v1/orcamento", func(r chi.Router) {
+		r.Post("/add", createOrcamento(service))
+		r.Put("/update/{id}/{nome}", updateOrcamento(service))
+		r.Get("/getbyid/{id}", getByIdOrcamento(service))
 		r.Get("/all", func(w http.ResponseWriter, r *http.Request) {
-			handler := getAllorcamento(service)
+			handler := getAllOrcamento(service)
 			handler.ServeHTTP(w, r)
 		})
 	})

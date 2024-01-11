@@ -3,7 +3,6 @@ module github.com/katana/back-end/orcafacil-go
 go 1.21.0
 
 require (
-	github.com/go-chi/cors v1.2.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
@@ -25,8 +24,9 @@ require (
 
 require (
 	github.com/go-chi/chi/v5 v5.0.10
+	github.com/go-chi/cors v1.2.1
 	github.com/go-chi/jwtauth v1.2.0
-	github.com/rabbitmq/amqp091-go v1.8.1
+	github.com/rabbitmq/amqp091-go v1.9.0
 	go.mongodb.org/mongo-driver v1.13.0
 	go.uber.org/zap v1.25.0
 	golang.org/x/crypto v0.16.0

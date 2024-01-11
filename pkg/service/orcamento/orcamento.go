@@ -21,8 +21,10 @@ type OrcamentoServiceInterface interface {
 	Update(ctx context.Context, ID string, OrcamentoToChange *model.Orcamento) (bool, error)
 	GetByID(ctx context.Context, ID string) (*model.Orcamento, error)
 	GetAll(ctx context.Context, filters model.FilterOrcamento, limit, page int64) (*model.Paginate, error)
-	GetToQueue(ctx context.Context, ID string) (*dto.OrcamentoFila, error)
-	SendToQuequeFil(ctx context.Context, fila *dto.OrcamentoFila) (bool, error)
+	GetToQueuePrdToFornec(ctx context.Context, ID string) (*dto.OrcamentoFilaPrdFornecedor, error)
+	//SendToQuequePrdFornecedor(ctx context.Context, fila *dto.OrcamentoFilaPrdFornecedor) (bool, error)
+	GetPrdContacao(ctx context.Context, Orcamento *model.Orcamento) (dto.ProdutoEnviadoParaFilaDeOrcamentoDTO, error)
+	SenderePrdOrcamentoFila(ctx context.Context, orcamentoPrdsFila *dto.ProdutoEnviadoParaFilaDeOrcamentoDTO) bool
 }
 
 type OrcamentoDataService struct {
@@ -30,7 +32,7 @@ type OrcamentoDataService struct {
 	rabbit_mq rabbitmq.RabbitInterface
 }
 
-func NewOrcamentoervice(mongo_connection mongodb.MongoDBInterface, rabbit_connection rabbitmq.RabbitInterface) *OrcamentoDataService {
+func NewOrcamentoService(mongo_connection mongodb.MongoDBInterface, rabbit_connection rabbitmq.RabbitInterface) *OrcamentoDataService {
 	return &OrcamentoDataService{
 		mdb:       mongo_connection,
 		rabbit_mq: rabbit_connection,
@@ -38,7 +40,7 @@ func NewOrcamentoervice(mongo_connection mongodb.MongoDBInterface, rabbit_connec
 }
 
 func (fornec *OrcamentoDataService) Create(ctx context.Context, Orcamento model.Orcamento) (*model.Orcamento, error) {
-	collection := fornec.mdb.GetCollection("Orcamentoes")
+	collection := fornec.mdb.GetCollection("orcamentos")
 
 	dt := time.Now().Format(time.RFC3339)
 
@@ -46,7 +48,7 @@ func (fornec *OrcamentoDataService) Create(ctx context.Context, Orcamento model.
 	Orcamento.CreatedAt = dt
 	Orcamento.UpdatedAt = dt
 	Orcamento.ID = primitive.NewObjectID()
-
+	var err error
 	result, err := collection.InsertOne(ctx, Orcamento)
 	if err != nil {
 		logger.Error("erro salvar  Orcamento", err)
@@ -55,11 +57,30 @@ func (fornec *OrcamentoDataService) Create(ctx context.Context, Orcamento model.
 
 	Orcamento.ID = result.InsertedID.(primitive.ObjectID)
 
+	prds, err := fornec.GetPrdContacao(ctx, &Orcamento)
+	if err != nil {
+		logger.Error("Erro ao pegar produtos do orcamento", err)
+		return &Orcamento, err
+	}
+	productsJSON, err := json.Marshal(prds.Produtos)
+	if err != nil {
+		//fmt.Println("Error marshalling products to JSON:", err)
+		return &Orcamento, err
+	}
+
+	// Log the JSON string
+	logger.Info(string(productsJSON))
+	send := fornec.SenderePrdOrcamentoFila(ctx, &prds)
+	if send == false {
+		logger.Error("Erro ao enviar produtos do orcamento para fila", err)
+		return &Orcamento, err
+	}
+
 	return &Orcamento, nil
 }
 
 func (fornec *OrcamentoDataService) Update(ctx context.Context, ID string, OrcamentoToChange *model.Orcamento) (bool, error) {
-	collection := fornec.mdb.GetCollection("Orcamentoes")
+	collection := fornec.mdb.GetCollection("orcamentos")
 
 	opts := options.Update().SetUpsert(true)
 
@@ -109,7 +130,7 @@ func (fornec *OrcamentoDataService) Update(ctx context.Context, ID string, Orcam
 
 func (fornec *OrcamentoDataService) GetByID(ctx context.Context, ID string) (*model.Orcamento, error) {
 
-	collection := fornec.mdb.GetCollection("Orcamentoes")
+	collection := fornec.mdb.GetCollection("orcamentos")
 
 	Orcamento := &model.Orcamento{}
 
@@ -134,7 +155,7 @@ func (fornec *OrcamentoDataService) GetByID(ctx context.Context, ID string) (*mo
 }
 
 func (fornec *OrcamentoDataService) GetAll(ctx context.Context, filters model.FilterOrcamento, limit, page int64) (*model.Paginate, error) {
-	collection := fornec.mdb.GetCollection("Orcamentoes")
+	collection := fornec.mdb.GetCollection("orcamentos")
 
 	query := bson.M{}
 
@@ -183,7 +204,7 @@ func (fornec *OrcamentoDataService) GetAll(ctx context.Context, filters model.Fi
 }
 func (fornec *OrcamentoDataService) GetByCnpj(ctx context.Context, Cnpj string) bool {
 
-	collection := fornec.mdb.GetCollection("Orcamentoes")
+	collection := fornec.mdb.GetCollection("orcamentos")
 
 	// Utilizando o método CountDocuments para verificar a existência
 	filter := bson.D{{Key: "cnpj", Value: Cnpj}}
@@ -197,7 +218,7 @@ func (fornec *OrcamentoDataService) GetByCnpj(ctx context.Context, Cnpj string) 
 	return count > 0
 }
 
-func (fornec *OrcamentoDataService) EnviarParaFila(ctx context.Context, fila *dto.OrcamentoFila) (bool, error) {
+func (fornec *OrcamentoDataService) EnviarParaFila(ctx context.Context, fila *dto.OrcamentoFilaPrdFornecedor) (bool, error) {
 
 	data, err := json.Marshal(fila)
 	if err != nil {
@@ -217,4 +238,64 @@ func (fornec *OrcamentoDataService) EnviarParaFila(ctx context.Context, fila *dt
 	}
 
 	return true, nil
+}
+
+func (fornec *OrcamentoDataService) GetToQueuePrdToFornec(ctx context.Context, ID string) (*dto.OrcamentoFilaPrdFornecedor, error) {
+	fetchedOrcamento, err := fornec.GetByID(ctx, ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Populate OrcamentoFila based on fetchedOrcamento
+	orcamentoFila := dto.OrcamentoFilaPrdFornecedor{
+		IdOrcamento: fetchedOrcamento.ID,
+		StatusFila:  fetchedOrcamento.StatusOrecamento,
+		// You may need to populate other fields based on your requirements
+	}
+
+	// Fetch other necessary information from the fetchedOrcamento
+	// For example, populate Fornecedor field
+	for _, fornecedor := range fetchedOrcamento.Fornecedores {
+		orcamentoFila.Fornecedor = fornecedor
+		break // Assuming you only want the first Fornecedor
+	}
+
+	return &orcamentoFila, nil
+}
+func (fornec *OrcamentoDataService) GetPrdContacao(ctx context.Context, Orcamento *model.Orcamento) (dto.ProdutoEnviadoParaFilaDeOrcamentoDTO, error) {
+	var prd dto.ProdutoContacaoDTO
+	var prds []dto.ProdutoContacaoDTO
+	for _, produto := range Orcamento.ProdutosContacao {
+		prd.ProdutoID = produto.ProdutoID
+		prd.Quantidade = produto.Quantidade
+		prd.Nome = produto.Nome
+		prds = append(prds, prd)
+	}
+	orcamentoPrdFila := dto.ProdutoEnviadoParaFilaDeOrcamentoDTO{
+		IdOrcamento: Orcamento.ID,
+		DataEnvio:   Orcamento.DataSolicitacao,
+		Produtos:    prds,
+	}
+	// You can return nil as the second parameter if there is no error
+	return orcamentoPrdFila, nil
+}
+func (fornec *OrcamentoDataService) SenderePrdOrcamentoFila(ctx context.Context, orcamentoPrdsFila *dto.ProdutoEnviadoParaFilaDeOrcamentoDTO) bool {
+	data, err := json.Marshal(orcamentoPrdsFila)
+	if err != nil {
+		logger.Error("Erro ao converter OrcamentoFila para []byte: ", err)
+		return false
+	}
+
+	msg := &rabbitmq.Message{
+		Data:        data,
+		ContentType: "application/json; charset=utf-8",
+	}
+
+	err = fornec.rabbit_mq.SenderRb(ctx, "QUEUE_PRDS_PARA_COTACAO", msg)
+	if err != nil {
+		logger.Error("Erro ao envair produtos do orcamento pra faila ", err)
+		return false
+	}
+
+	return true
 }
