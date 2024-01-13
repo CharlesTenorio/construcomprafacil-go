@@ -44,14 +44,14 @@ type OrcamentoFilaPrdFornecedor struct {
 	StatusFila  string             `bson:"status" json:"status"`
 }
 
-type ProdutoContacaoDTO struct {
+type ProdutoEnvidadosParaContacaoDTO struct {
 	ProdutoID  primitive.ObjectID `bson:"produto_id" json:"produto_id"`
 	Nome       string             `bson:"nome_produto" json:"nome_produto"`
 	Quantidade int                `bson:"quantidade" json:"quantidade"`
 }
 
 type ProdutoEnviadoParaFilaDeOrcamentoDTO struct {
-	IdOrcamento primitive.ObjectID   `bson:"id_orcamento" json:"id_orcamento"`
-	Produtos    []ProdutoContacaoDTO `bson:"produtos" json:"produtos"`
-	DataEnvio   time.Time            `bson:"dataEnvio" json:"dataEnvio"`
+	IdOrcamento primitive.ObjectID                `bson:"id_orcamento" json:"id_orcamento"`
+	Produtos    []ProdutoEnvidadosParaContacaoDTO `bson:"produtos" json:"produtos"`
+	DataEnvio   time.Time                         `bson:"dataEnvio" json:"dataEnvio"`
 }

@@ -8,23 +8,23 @@ import (
 )
 
 type Orcamento struct {
-	ID                   primitive.ObjectID    `bson:"_id" json:"_id"`
-	ClienteID            primitive.ObjectID    `bson:"cliente_id" json:"cliente_id"`
-	Descricao            string                `bson:"descricao" json:"descricao"`
-	DataSolicitacao      time.Time             `bson:"data_solicitacao" json:"data_solicitacao"`
-	PrazoRespostaFor     time.Time             `bson:"dataPrazoFor" json:"dataPrazoFor"`
-	PrazoRespostaCli     time.Time             `bson:"dataPrazoCli" json:"dataPrazoCli"`
-	SugestaoPrazoEntrega string                `bson:"sugestaoprazoEntrega" json:"sugestaoprazoEntrega"`
-	Finalizado           bool                  `bson:"finalizado" json:"finalizado"`
-	PegarEstabelecimento bool                  `bson:"pegarEstabelecimento" json:"pegarEstabelecimento"`
-	GrupoDeCliente       []dto.ClienteGrupoDto `bson:"listaCliente" json:"listaCliente"`
-	EnderecoCliente      []Endereco            `bson:"enderecoCliente" json:"enderecoCliente"`
-	Fornecedores         []dto.FornecedorDto   `bson:"fornecedor" json:"fornecedor"`
-	ProdutosContacao     []dto.ProdutoDto      `bson:"produtosContacao" json:"produtosContacao"`
-	Enabled              bool                  `bson:"enabled" json:"enabled"`
-	CreatedAt            string                `bson:"created_at" json:"created_at,omitempty"`
-	UpdatedAt            string                `bson:"updated_at" json:"updated_at,omitempty"`
-	StatusOrecamento     string                `bson:"status" json:"status"`
+	ID                   primitive.ObjectID                    `bson:"_id" json:"_id"`
+	ClienteID            primitive.ObjectID                    `bson:"cliente_id" json:"cliente_id"`
+	Descricao            string                                `bson:"descricao" json:"descricao"`
+	DataSolicitacao      time.Time                             `bson:"data_solicitacao" json:"data_solicitacao"`
+	PrazoRespostaFor     time.Time                             `bson:"dataPrazoFor" json:"dataPrazoFor"`
+	PrazoRespostaCli     time.Time                             `bson:"dataPrazoCli" json:"dataPrazoCli"`
+	SugestaoPrazoEntrega string                                `bson:"sugestaoprazoEntrega" json:"sugestaoprazoEntrega"`
+	Finalizado           bool                                  `bson:"finalizado" json:"finalizado"`
+	PegarEstabelecimento bool                                  `bson:"pegarEstabelecimento" json:"pegarEstabelecimento"`
+	GrupoDeCliente       []dto.ClienteGrupoDto                 `bson:"listaCliente" json:"listaCliente"`
+	EnderecoCliente      []Endereco                            `bson:"enderecoCliente" json:"enderecoCliente"`
+	Fornecedores         []dto.FornecedorDto                   `bson:"fornecedor" json:"fornecedor"`
+	ProdutosContacao     []dto.ProdutoEnvidadosParaContacaoDTO `bson:"produtosContacao" json:"produtosContacao"`
+	Enabled              bool                                  `bson:"enabled" json:"enabled"`
+	CreatedAt            string                                `bson:"created_at" json:"created_at,omitempty"`
+	UpdatedAt            string                                `bson:"updated_at" json:"updated_at,omitempty"`
+	StatusOrecamento     string                                `bson:"status" json:"status"`
 }
 
 type FilterOrcamento struct {

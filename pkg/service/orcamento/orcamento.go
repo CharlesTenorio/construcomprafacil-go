@@ -263,8 +263,8 @@ func (fornec *OrcamentoDataService) GetToQueuePrdToFornec(ctx context.Context, I
 	return &orcamentoFila, nil
 }
 func (fornec *OrcamentoDataService) GetPrdContacao(ctx context.Context, Orcamento *model.Orcamento) (dto.ProdutoEnviadoParaFilaDeOrcamentoDTO, error) {
-	var prd dto.ProdutoContacaoDTO
-	var prds []dto.ProdutoContacaoDTO
+	var prd dto.ProdutoEnvidadosParaContacaoDTO
+	var prds []dto.ProdutoEnvidadosParaContacaoDTO
 	for _, produto := range Orcamento.ProdutosContacao {
 		prd.ProdutoID = produto.ProdutoID
 		prd.Quantidade = produto.Quantidade
@@ -291,7 +291,12 @@ func (fornec *OrcamentoDataService) SenderePrdOrcamentoFila(ctx context.Context,
 		ContentType: "application/json; charset=utf-8",
 	}
 
-	err = fornec.rabbit_mq.SenderRb(ctx, "QUEUE_PRDS_PARA_COTACAO", msg)
+	err = fornec.rabbit_mq.Connect()
+	if err != nil {
+		logger.Error("deu ruim na conexao como RabbitMQ", err)
+	}
+
+	err = fornec.rabbit_mq.SenderRb(ctx, "prd_para_cotacao", msg)
 	if err != nil {
 		logger.Error("Erro ao envair produtos do orcamento pra faila ", err)
 		return false
