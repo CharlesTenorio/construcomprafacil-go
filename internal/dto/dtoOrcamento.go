@@ -12,7 +12,7 @@ type ClienteGrupoDto struct {
 
 type FornecedorDto struct {
 	FornecedorID primitive.ObjectID `bson:"fornecedor_id" json:"fornecedor_id"`
-	Produtos     []ProdutoDto       `bson:"produto" json:"produto"`
+	Produtos     []ProdutoDto       `bson:"produtos" json:"produtos"`
 }
 
 type ProdutoDto struct {
@@ -46,7 +46,7 @@ type OrcamentoFilaPrdFornecedor struct {
 
 type ProdutoEnvidadosParaContacaoDTO struct {
 	ProdutoID  primitive.ObjectID `bson:"produto_id" json:"produto_id"`
-	Nome       string             `bson:"nome_produto" json:"nome_produto"`
+	Nome       string             `bson:"nome" json:"nome"`
 	Quantidade int                `bson:"quantidade" json:"quantidade"`
 }
 

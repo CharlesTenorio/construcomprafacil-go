@@ -19,7 +19,7 @@ type FornecedoresEmPrd struct {
 
 type ProdutosEmFornecedor struct {
 	ID         string  `json:"id"`
-	Descricao  string  `json:"descricao"`
+	Nome       string  `json:"nome"`
 	PrecoVenda float64 `json:"preco_venda"`
 	Enabled    bool    `json:"enabled"`
 }

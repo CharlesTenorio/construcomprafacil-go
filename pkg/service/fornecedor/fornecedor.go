@@ -187,17 +187,36 @@ func (fornec *FornecedorDataService) AddProdutos(ctx context.Context, ID string,
 		logger.Error("Erro ao converter ID para ObjectID", err)
 		return false, err
 	}
-	// push
-	update := bson.D{{Key: "$addToSet",
+
+	// Verificar se o campo 'produtos' está nulo
+	filter := bson.D{
+		{Key: "_id", Value: fornecedorID},
+		{Key: "produtos", Value: nil},
+	}
+
+	// Se o campo 'produtos' está nulo, use $set para inicializá-lo como um array
+	update := bson.D{{Key: "$set",
 		Value: bson.D{
-			{Key: "produtos", Value: bson.D{
-				{Key: "$each", Value: prds},
-			}},
+			{Key: "produtos", Value: prds},
 		},
 	}}
 
-	filter := bson.D{
-		{Key: "_id", Value: fornecedorID},
+	// Verificar se o campo 'produtos' não está nulo para decidir entre $addToSet e $set
+	count, err := collection.CountDocuments(ctx, filter)
+	if err != nil {
+		logger.Error("Erro ao verificar a existência do campo 'produtos'", err)
+		return false, err
+	}
+
+	if count > 1 {
+		// Se o campo 'produtos' não está nulo, use $addToSet
+		update = bson.D{{Key: "$addToSet",
+			Value: bson.D{
+				{Key: "produtos", Value: bson.D{
+					{Key: "$each", Value: prds},
+				}},
+			},
+		}}
 	}
 
 	// Atualize os produtos do fornecedor
@@ -222,7 +241,6 @@ func (fornec *FornecedorDataService) AddProdutos(ctx context.Context, ID string,
 
 	return true, nil
 }
-
 func (fornec *FornecedorDataService) UpdFornecedorParaPrd(ctx context.Context, idPrd string, produto *model.Produto) (bool, error) {
 	collection := fornec.mdb.GetCollection("produtos")
 
