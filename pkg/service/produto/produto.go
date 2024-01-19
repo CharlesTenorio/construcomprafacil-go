@@ -21,6 +21,7 @@ type ProdutoServiceInterface interface {
 	GetByID(ctx context.Context, ID string) (*model.Produto, error)
 	GetAll(ctx context.Context, filters model.FilterProduto, limit, page int64) (*model.Paginate, error)
 	AddFornecedroes(ctx context.Context, ID string, fornec *[]dto.FornecedoresEmPrd) (bool, error)
+	CheckExists(ctx context.Context, prod string) bool
 }
 
 type ProdutoDataService struct {
@@ -181,4 +182,20 @@ func (prd *ProdutoDataService) AddFornecedroes(ctx context.Context, ID string, f
 	}
 
 	return true, nil
+}
+func (prd *ProdutoDataService) CheckExists(ctx context.Context, prod string) bool {
+	collection := prd.mdb.GetCollection("cfStore")
+
+	query := bson.M{
+		"data_type": "produto",
+		"nome":      prd,
+	}
+
+	count, err := collection.CountDocuments(ctx, query)
+	if err != nil {
+		logger.Error("Erro ao verificar a existência do Produto", err)
+		return false
+	}
+
+	return count > 0
 }

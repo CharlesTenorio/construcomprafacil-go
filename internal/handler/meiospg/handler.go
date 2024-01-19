@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
 	"github.com/katana/back-end/orcafacil-go/pkg/service/meiospg"
+	"github.com/katana/back-end/orcafacil-go/pkg/service/validation"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/katana/back-end/orcafacil-go/pkg/model"
@@ -37,8 +38,18 @@ func createMeioPg(service meiospg.MeiosServiceInterface) http.HandlerFunc {
 			http.Error(w, msg.Message, http.StatusBadRequest)
 			return
 		}
+		mpg.Meiopg = validation.CareString(mpg.Meiopg)
 
-		_, err = service.Create(r.Context(), *mpg)
+		if service.CheckExists(r.Context(), mpg.Meiopg) {
+			msg = Response{
+				Message: "meio_pg ja existe",
+			}
+			http.Error(w, msg.Message, http.StatusConflict)
+			return
+		}
+		mpagamento := model.NewMeioPG(*mpg)
+
+		_, err = service.Create(r.Context(), *mpagamento)
 		if err != nil {
 			logger.Error("erro ao acessar a camada de service do mpg", err)
 			http.Error(w, "Error ou salvar Meio pg"+err.Error(), http.StatusInternalServerError)

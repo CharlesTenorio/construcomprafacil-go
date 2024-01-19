@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
+	"github.com/katana/back-end/orcafacil-go/pkg/service/validation"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -38,7 +39,7 @@ func NewMeioPG(client_request MeioPagamento) *MeioPagamento {
 	return &MeioPagamento{
 		ID:        primitive.NewObjectID(),
 		DataType:  "meio_pg",
-		Meiopg:    client_request.Meiopg,
+		Meiopg:    validation.CareString(client_request.Meiopg),
 		Enabled:   true,
 		CreatedAt: time.Now().String(),
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/katana/back-end/orcafacil-go/internal/dto"
 	"github.com/katana/back-end/orcafacil-go/pkg/service/categoria"
 	"github.com/katana/back-end/orcafacil-go/pkg/service/produto"
+	"github.com/katana/back-end/orcafacil-go/pkg/service/validation"
 
 	"github.com/katana/back-end/orcafacil-go/pkg/model"
 )
@@ -39,6 +40,15 @@ func createProduto(service produto.ProdutoServiceInterface) http.HandlerFunc {
 			return
 		}
 
+		produto.Nome = validation.CareString(produto.Nome)
+
+		if service.CheckExists(r.Context(), produto.Nome) {
+			msg = Response{
+				Message: "Produto ja existe",
+			}
+			http.Error(w, msg.Message, http.StatusConflict)
+			return
+		}
 		_, err = service.Create(r.Context(), *produto)
 		if err != nil {
 			logger.Error("erro ao acessar a camada de service do mpg", err)

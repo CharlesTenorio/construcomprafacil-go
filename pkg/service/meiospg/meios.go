@@ -9,7 +9,6 @@ import (
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
 	"github.com/katana/back-end/orcafacil-go/pkg/adapter/mongodb"
 	"github.com/katana/back-end/orcafacil-go/pkg/model"
-	"github.com/katana/back-end/orcafacil-go/pkg/service/validation"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -20,6 +19,7 @@ type MeiosServiceInterface interface {
 	Update(ctx context.Context, ID string, meioToChange *model.MeioPagamento) (bool, error)
 	GetByID(ctx context.Context, ID string) (*model.MeioPagamento, error)
 	GetAll(ctx context.Context, filters model.FilterMeioPg, limit, page int64) (*model.Paginate, error)
+	CheckExists(ctx context.Context, meio string) bool
 }
 
 type MeioPgDataService struct {
@@ -34,17 +34,9 @@ func NewMeioPgService(mongo_connection mongodb.MongoDBInterface) *MeioPgDataServ
 
 func (mpg *MeioPgDataService) Create(ctx context.Context, meiopg model.MeioPagamento) (*model.MeioPagamento, error) {
 	collection := mpg.mdb.GetCollection("cfStore")
+	meio := model.NewMeioPG(meiopg)
 
-	meiopg.ID = primitive.NewObjectID()
-
-	dt := time.Now().Format(time.RFC3339)
-
-	meiopg.Enabled = true
-	meiopg.Meiopg = validation.CareString(meiopg.Meiopg)
-	meiopg.CreatedAt = dt
-	meiopg.UpdatedAt = dt
-
-	result, err := collection.InsertOne(ctx, meiopg)
+	result, err := collection.InsertOne(ctx, meio)
 	if err != nil {
 		logger.Error("erro salvar meio de pagamento", err)
 		return &meiopg, err
@@ -160,4 +152,21 @@ func (mpg *MeioPgDataService) GetAll(ctx context.Context, filters model.FilterMe
 	pagination.Paginate(result)
 
 	return pagination, nil
+}
+
+func (mpg *MeioPgDataService) CheckExists(ctx context.Context, meio string) bool {
+	collection := mpg.mdb.GetCollection("cfStore")
+
+	query := bson.M{
+		"data_type": "meio_pg",
+		"meio_pg":   meio,
+	}
+
+	count, err := collection.CountDocuments(ctx, query)
+	if err != nil {
+		logger.Error("Erro ao verificar a existência do meio de pagamento", err)
+		return false
+	}
+
+	return count > 0
 }
