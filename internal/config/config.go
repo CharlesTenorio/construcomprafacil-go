@@ -229,7 +229,7 @@ func defaultConf() *Config {
 		PORT:         "8080",
 		Mode:         DEVELOPER,
 		JWTSecretKey: "RgUkXp2s5v8y/B?E(H+KbPeShVmYq3t6", // "----your-256-bit-secret-here----" length 32
-		JWTTokenExp:  15,
+		JWTTokenExp:  300,
 		// 15m
 		MongoDBConfig: MongoDBConfig{
 			MDB_URI:         "mongodb://admin:supersenha@localhost:27017/",
@@ -248,11 +248,11 @@ func defaultConf() *Config {
 		},
 
 		ConsumerConfig: ConsumerConfig{
-			ExchangeName:  "message_teams",
+			ExchangeName:  "message_cotafacil",
 			ExchangeType:  "direct",
 			RoutingKey:    "create",
-			QueueName:     "SEND_MESSAGE_TEAMS",
-			ConsumerName:  "CONSUMER_MESSAGE_TEAMS",
+			QueueName:     "SEND_MESSAGE_COTAFACIL",
+			ConsumerName:  "CONSUMER_MESSAGE_COTAFACIL",
 			ConsumerCount: 3,
 			PrefetchCount: 1,
 		},
@@ -269,12 +269,10 @@ func defaultConf() *Config {
 func parseCollectionsString(collectionsString string) map[string]string {
 	collections := make(map[string]string)
 
-	// Separar a string usando a vírgula como delimitador
 	collectionNames := strings.Split(collectionsString, ",")
 
-	// Adicionar cada nome de coleção ao mapa
 	for _, name := range collectionNames {
-		// Remover espaços em branco ao redor do nome da coleção
+
 		name = strings.TrimSpace(name)
 		collections[name] = name
 	}

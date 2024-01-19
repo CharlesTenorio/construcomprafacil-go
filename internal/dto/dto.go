@@ -1,6 +1,11 @@
 package dto
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"time"
+
+	"github.com/katana/back-end/orcafacil-go/pkg/service/validation"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type GetJwtInput struct {
 	Email string `json:"email"`
@@ -18,10 +23,13 @@ type FornecedoresEmPrd struct {
 }
 
 type ProdutosEmFornecedor struct {
-	ID         string  `json:"id"`
-	Nome       string  `json:"nome"`
-	PrecoVenda float64 `json:"preco_venda"`
-	Enabled    bool    `json:"enabled"`
+	ID          string `json:"id"`
+	DataType    string `bson:"data_type" json:"-"`
+	IDCategoria string `json:"id_categoria"`
+	Nome        string `json:"nome"`
+	Enabled     bool   `json:"enabled"`
+	CreatedAt   string `bson:"created_at" json:"created_at,omitempty"`
+	UpdatedAt   string `bson:"updated_at" json:"updated_at,omitempty"`
 }
 
 type ProdutosEmCategorias struct {
@@ -36,4 +44,23 @@ type ProdutosPayload struct {
 
 type FornecedorPaylaod struct {
 	Fornecedores []FornecedoresEmPrd `json:"fornecedores"`
+}
+
+func NewProdutosEmFornecedor(prdFornec_request ProdutosEmFornecedor) *ProdutosEmFornecedor {
+	return &ProdutosEmFornecedor{
+		ID:          prdFornec_request.ID,
+		DataType:    "produto_fornecedor",
+		IDCategoria: prdFornec_request.IDCategoria,
+		Nome:        validation.CareString(prdFornec_request.Nome),
+		Enabled:     true,
+		CreatedAt:   time.Now().String(),
+	}
+}
+
+func NewProdutoEmCategoria(prdCat_request ProdutosEmCategorias) *ProdutosEmCategorias {
+	return &ProdutosEmCategorias{
+		ID:      primitive.NewObjectID(),
+		Nome:    validation.CareString(prdCat_request.Nome),
+		Enabled: true,
+	}
 }

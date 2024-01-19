@@ -60,6 +60,10 @@ func main() {
 	orca_service := service_orcamento.NewOrcamentoService(mogDbConn, rbtMQConn)
 
 	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.WithValue("jwt", conf.TokenAuth))
+	r.Use(middleware.WithValue("JWTTokenExp", conf.JWTTokenExp))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -68,14 +72,10 @@ func main() {
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.WithValue("jwt", conf.TokenAuth))
-	r.Use(middleware.WithValue("JWTTokenExp", conf.JWTTokenExp))
 
 	r.Get("/", healthcheck)
 	hand_usr.RegisterUsuarioAPIHandlers(r, usr_service)
-	hand_meiopg.RegisterMeioPgAPIHandlers(r, meiopg_service)
+	hand_meiopg.RegisterMeioPgAPIHandlers(r, meiopg_service, conf)
 	hand_produto.RegisterPrdPIHandlers(r, prd_service)
 	hand_categoria.RegisterCategoriaPIHandlers(r, categoria_service)
 

@@ -36,13 +36,13 @@ func NewCategoriaervice(mongo_connection mongodb.MongoDBInterface) *CategoriaDat
 
 func (cat *CategoriaDataService) Create(ctx context.Context, categoria model.Categoria) (*model.Categoria, error) {
 	collection := cat.mdb.GetCollection("cfStore")
-	categ := model.NewCategoria(categoria)
 
 	for i := range categoria.Produtos {
+		categoria.Produtos[i].ID = primitive.NewObjectID()
 		categoria.Produtos[i].Enabled = true
 	}
-
-	result, err := collection.InsertOne(ctx, categ)
+	categoria.DataType = "categoria"
+	result, err := collection.InsertOne(ctx, categoria)
 	if err != nil {
 		logger.Error("erro salvar  categoria", err)
 		return &categoria, err
