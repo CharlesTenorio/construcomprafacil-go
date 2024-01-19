@@ -10,6 +10,7 @@ import (
 
 type MeioPagamento struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	DataType  string             `bson:"data_type" json:"-"`
 	Meiopg    string             `bson:"meio_pg" json:"meio_pg"`
 	Enabled   bool               `bson:"enabled" json:"enabled"`
 	CreatedAt string             `bson:"created_at" json:"created_at,omitempty"`
@@ -35,8 +36,8 @@ type FilterMeioPg struct {
 
 func NewMeioPG(client_request MeioPagamento) *MeioPagamento {
 	return &MeioPagamento{
-		ID: primitive.NewObjectID(),
-
+		ID:        primitive.NewObjectID(),
+		DataType:  "meio_pg",
 		Meiopg:    client_request.Meiopg,
 		Enabled:   true,
 		CreatedAt: time.Now().String(),

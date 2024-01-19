@@ -18,7 +18,7 @@ import (
 
 type CategoriaServiceInterface interface {
 	Create(ctx context.Context, categoria model.Categoria) (*model.Categoria, error)
-	Update(ctx context.Context, ID string, meioToChange *model.Categoria) (bool, error)
+	Update(ctx context.Context, ID string, categoriaToChange *model.Categoria) (bool, error)
 	GetByID(ctx context.Context, ID string) (*model.Categoria, error)
 	GetAll(ctx context.Context, filters model.FilterCategoria, limit, page int64) (*model.Paginate, error)
 	ListProduto(ctx context.Context, ID string, limit, page int64) (*model.Paginate, error)
@@ -35,20 +35,14 @@ func NewCategoriaervice(mongo_connection mongodb.MongoDBInterface) *CategoriaDat
 }
 
 func (cat *CategoriaDataService) Create(ctx context.Context, categoria model.Categoria) (*model.Categoria, error) {
-	collection := cat.mdb.GetCollection("categorias")
-
-	dt := time.Now().Format(time.RFC3339)
-	categoria.ID = primitive.NewObjectID()
-	categoria.Enabled = true
-	categoria.CreatedAt = dt
-	categoria.UpdatedAt = dt
-	categoria.Nome = validation.CareString(categoria.Nome)
+	collection := cat.mdb.GetCollection("cfStore")
+	categ := model.NewCategoria(categoria)
 
 	for i := range categoria.Produtos {
 		categoria.Produtos[i].Enabled = true
 	}
 
-	result, err := collection.InsertOne(ctx, categoria)
+	result, err := collection.InsertOne(ctx, categ)
 	if err != nil {
 		logger.Error("erro salvar  categoria", err)
 		return &categoria, err
@@ -60,7 +54,7 @@ func (cat *CategoriaDataService) Create(ctx context.Context, categoria model.Cat
 }
 
 func (cat *CategoriaDataService) Update(ctx context.Context, ID string, categoria *model.Categoria) (bool, error) {
-	collection := cat.mdb.GetCollection("categorias")
+	collection := cat.mdb.GetCollection("cfStore")
 
 	opts := options.Update().SetUpsert(true)
 
@@ -72,7 +66,7 @@ func (cat *CategoriaDataService) Update(ctx context.Context, ID string, categori
 	}
 
 	filter := bson.D{
-
+		{Key: "data_type", Value: "categoria"},
 		{Key: "_id", Value: objectID},
 	}
 	categoria.Nome = validation.CareString(categoria.Nome)
@@ -96,7 +90,7 @@ func (cat *CategoriaDataService) Update(ctx context.Context, ID string, categori
 
 func (cat *CategoriaDataService) GetByID(ctx context.Context, ID string) (*model.Categoria, error) {
 
-	collection := cat.mdb.GetCollection("categorias")
+	collection := cat.mdb.GetCollection("cfStore")
 
 	categoria := &model.Categoria{}
 
@@ -108,6 +102,7 @@ func (cat *CategoriaDataService) GetByID(ctx context.Context, ID string) (*model
 	}
 
 	filter := bson.D{
+		{Key: "data_type", Value: "categoria"},
 		{Key: "_id", Value: objectID},
 	}
 
@@ -121,9 +116,11 @@ func (cat *CategoriaDataService) GetByID(ctx context.Context, ID string) (*model
 }
 
 func (cat *CategoriaDataService) GetAll(ctx context.Context, filters model.FilterCategoria, limit, page int64) (*model.Paginate, error) {
-	collection := cat.mdb.GetCollection("categorias")
+	collection := cat.mdb.GetCollection("cfStore")
 
-	query := bson.M{}
+	query := bson.M{
+		"data_type": "categoria",
+	}
 
 	if filters.Nome != "" || filters.Enabled != "" {
 		if filters.Nome != "" {
@@ -167,7 +164,7 @@ func (cat *CategoriaDataService) GetAll(ctx context.Context, filters model.Filte
 }
 
 func (cat *CategoriaDataService) ListProduto(ctx context.Context, categoriaID string, limit, page int64) (*model.Paginate, error) {
-	collection := cat.mdb.GetCollection("categorias")
+	collection := cat.mdb.GetCollection("cfStore")
 
 	categoriaObjectID, err := primitive.ObjectIDFromHex(categoriaID)
 	if err != nil {
@@ -176,8 +173,13 @@ func (cat *CategoriaDataService) ListProduto(ctx context.Context, categoriaID st
 	}
 
 	// Consulta a categoria especificada
-	filter := bson.D{{Key: "_id", Value: categoriaObjectID}}
-	projection := bson.D{{Key: "Produtos", Value: 1}}
+	filter := bson.D{
+
+		{Key: "_id", Value: categoriaObjectID}}
+	projection := bson.D{
+		{Key: "Produtos", Value: 1},
+		{Key: "data_type", Value: "categoria"},
+	}
 
 	var categoria model.Categoria
 	err = collection.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&categoria)

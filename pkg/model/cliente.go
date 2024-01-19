@@ -5,11 +5,13 @@ import (
 	"time"
 
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
+	"github.com/katana/back-end/orcafacil-go/pkg/service/validation"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Cliente struct {
 	ID        primitive.ObjectID `bson:"_id" json:"_id"`
+	DataType  string             `bson:"data_type" json:"-"`
 	IDUsuario primitive.ObjectID `bson:"user_id " json:"id_usr"`
 	Nome      string             `bson:"nome" json:"nome"`
 	Email     string             `bson:"email" json:"email"`
@@ -44,8 +46,9 @@ type FilterCliente struct {
 func NewCliente(cliente_request Cliente) *Cliente {
 	return &Cliente{
 		ID:        primitive.NewObjectID(),
+		DataType:  "cliente",
 		IDUsuario: cliente_request.IDUsuario,
-		Nome:      cliente_request.Nome,
+		Nome:      validation.CareString(cliente_request.Nome),
 		Enabled:   true,
 		CreatedAt: time.Now().String(),
 	}

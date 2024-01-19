@@ -43,3 +43,7 @@ $ SRV_PORT=9090 SRV_MODE=production ./main.exe
 
 > Acesse:
 - http://localhost:8080/api/v1/products
+### RODAR SOMENTE DOIS SERVIÇOS para dev
+docker-compose up -d mongodb rabbitmq 
+docker-compose down
+

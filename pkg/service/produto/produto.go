@@ -10,7 +10,6 @@ import (
 	"github.com/katana/back-end/orcafacil-go/internal/dto"
 	"github.com/katana/back-end/orcafacil-go/pkg/adapter/mongodb"
 	"github.com/katana/back-end/orcafacil-go/pkg/model"
-	"github.com/katana/back-end/orcafacil-go/pkg/service/validation"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -35,16 +34,10 @@ func NewProdutoervice(mongo_connection mongodb.MongoDBInterface) *ProdutoDataSer
 }
 
 func (prd *ProdutoDataService) Create(ctx context.Context, produto model.Produto) (*model.Produto, error) {
-	collection := prd.mdb.GetCollection("produtos")
+	collection := prd.mdb.GetCollection("cfStore")
+	prod := model.NewProduto(produto)
 
-	dt := time.Now().Format(time.RFC3339)
-	produto.ID = primitive.NewObjectID()
-	produto.Nome = validation.CareString(produto.Nome)
-	produto.Enabled = true
-	produto.CreatedAt = dt
-	produto.UpdatedAt = dt
-
-	result, err := collection.InsertOne(ctx, produto)
+	result, err := collection.InsertOne(ctx, prod)
 	if err != nil {
 		logger.Error("erro salvar  Produto", err)
 		return &produto, err
@@ -56,7 +49,7 @@ func (prd *ProdutoDataService) Create(ctx context.Context, produto model.Produto
 }
 
 func (prd *ProdutoDataService) Update(ctx context.Context, ID string, Produto *model.Produto) (bool, error) {
-	collection := prd.mdb.GetCollection("produtos")
+	collection := prd.mdb.GetCollection("cfStore")
 
 	opts := options.Update().SetUpsert(true)
 
@@ -68,7 +61,7 @@ func (prd *ProdutoDataService) Update(ctx context.Context, ID string, Produto *m
 	}
 
 	filter := bson.D{
-
+		{Key: "data_type", Value: "produto"},
 		{Key: "_id", Value: objectID},
 	}
 
@@ -92,7 +85,7 @@ func (prd *ProdutoDataService) Update(ctx context.Context, ID string, Produto *m
 
 func (prd *ProdutoDataService) GetByID(ctx context.Context, ID string) (*model.Produto, error) {
 
-	collection := prd.mdb.GetCollection("produtos")
+	collection := prd.mdb.GetCollection("cfStore")
 
 	Produto := &model.Produto{}
 
@@ -117,9 +110,9 @@ func (prd *ProdutoDataService) GetByID(ctx context.Context, ID string) (*model.P
 }
 
 func (prd *ProdutoDataService) GetAll(ctx context.Context, filters model.FilterProduto, limit, page int64) (*model.Paginate, error) {
-	collection := prd.mdb.GetCollection("produtos")
+	collection := prd.mdb.GetCollection("cfStore")
 
-	query := bson.M{}
+	query := bson.M{"data_type": "produto"}
 
 	if filters.Nome != "" || filters.Enabled != "" {
 		if filters.Nome != "" {
@@ -163,7 +156,7 @@ func (prd *ProdutoDataService) GetAll(ctx context.Context, filters model.FilterP
 }
 
 func (prd *ProdutoDataService) AddFornecedroes(ctx context.Context, ID string, fornecedores *[]dto.FornecedoresEmPrd) (bool, error) {
-	collection := prd.mdb.GetCollection("produtos")
+	collection := prd.mdb.GetCollection("cfStore")
 
 	produtoID, err := primitive.ObjectIDFromHex(ID)
 	if err != nil {

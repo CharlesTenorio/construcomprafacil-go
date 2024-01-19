@@ -17,7 +17,7 @@ import (
 
 type FornecedorServiceInterface interface {
 	Create(ctx context.Context, Fornecedor model.Fornecedor) (*model.Fornecedor, error)
-	Update(ctx context.Context, ID string, meioToChange *model.Fornecedor) (bool, error)
+	Update(ctx context.Context, ID string, fornecedorToChange *model.Fornecedor) (bool, error)
 	GetByID(ctx context.Context, ID string) (*model.Fornecedor, error)
 	GetAll(ctx context.Context, filters model.FilterFornecedor, limit, page int64) (*model.Paginate, error)
 	GetByCnpj(ctx context.Context, Cnpj string) bool
@@ -36,16 +36,9 @@ func NewFornecedorervice(mongo_connection mongodb.MongoDBInterface) *FornecedorD
 }
 
 func (fornec *FornecedorDataService) Create(ctx context.Context, Fornecedor model.Fornecedor) (*model.Fornecedor, error) {
-	collection := fornec.mdb.GetCollection("fornecedores")
-
-	dt := time.Now().Format(time.RFC3339)
-
-	Fornecedor.Enabled = true
-	Fornecedor.CreatedAt = dt
-	Fornecedor.UpdatedAt = dt
-	Fornecedor.ID = primitive.NewObjectID()
-
-	result, err := collection.InsertOne(ctx, Fornecedor)
+	collection := fornec.mdb.GetCollection("cfStore")
+	fornecedor := model.NewFornecedor(Fornecedor)
+	result, err := collection.InsertOne(ctx, fornecedor)
 	if err != nil {
 		logger.Error("erro salvar  Fornecedor", err)
 		return &Fornecedor, err
@@ -57,7 +50,7 @@ func (fornec *FornecedorDataService) Create(ctx context.Context, Fornecedor mode
 }
 
 func (fornec *FornecedorDataService) Update(ctx context.Context, ID string, Fornecedor *model.Fornecedor) (bool, error) {
-	collection := fornec.mdb.GetCollection("fornecedores")
+	collection := fornec.mdb.GetCollection("cfStore")
 
 	opts := options.Update().SetUpsert(true)
 
@@ -71,6 +64,7 @@ func (fornec *FornecedorDataService) Update(ctx context.Context, ID string, Forn
 	filter := bson.D{
 
 		{Key: "_id", Value: objectID},
+		{Key: "data_type", Value: "fornecedor"},
 	}
 
 	update := bson.D{{Key: "$set",
@@ -93,7 +87,7 @@ func (fornec *FornecedorDataService) Update(ctx context.Context, ID string, Forn
 
 func (fornec *FornecedorDataService) GetByID(ctx context.Context, ID string) (*model.Fornecedor, error) {
 
-	collection := fornec.mdb.GetCollection("fornecedores")
+	collection := fornec.mdb.GetCollection("cfStore")
 
 	Fornecedor := &model.Fornecedor{}
 
@@ -105,6 +99,7 @@ func (fornec *FornecedorDataService) GetByID(ctx context.Context, ID string) (*m
 	}
 
 	filter := bson.D{
+		{Key: "data_type", Value: "fornecedor"},
 		{Key: "_id", Value: objectID},
 	}
 
@@ -118,9 +113,9 @@ func (fornec *FornecedorDataService) GetByID(ctx context.Context, ID string) (*m
 }
 
 func (fornec *FornecedorDataService) GetAll(ctx context.Context, filters model.FilterFornecedor, limit, page int64) (*model.Paginate, error) {
-	collection := fornec.mdb.GetCollection("fornecedores")
+	collection := fornec.mdb.GetCollection("cfStore")
 
-	query := bson.M{}
+	query := bson.M{"data_type": "fornecedor"}
 
 	if filters.Nome != "" || filters.Enabled != "" {
 		if filters.Nome != "" {
@@ -180,7 +175,7 @@ func (fornec *FornecedorDataService) GetByCnpj(ctx context.Context, Cnpj string)
 }
 
 func (fornec *FornecedorDataService) AddProdutos(ctx context.Context, ID string, prds []dto.ProdutosEmFornecedor) (bool, error) {
-	collection := fornec.mdb.GetCollection("fornecedores")
+	collection := fornec.mdb.GetCollection("cfStore")
 
 	fornecedorID, err := primitive.ObjectIDFromHex(ID)
 	if err != nil {
@@ -242,7 +237,7 @@ func (fornec *FornecedorDataService) AddProdutos(ctx context.Context, ID string,
 	return true, nil
 }
 func (fornec *FornecedorDataService) UpdFornecedorParaPrd(ctx context.Context, idPrd string, produto *model.Produto) (bool, error) {
-	collection := fornec.mdb.GetCollection("produtos")
+	collection := fornec.mdb.GetCollection("cfStore")
 
 	opts := options.Update().SetUpsert(true)
 
@@ -255,12 +250,13 @@ func (fornec *FornecedorDataService) UpdFornecedorParaPrd(ctx context.Context, i
 
 	filter := bson.D{
 
+		{Key: "data_type", Value: "produto"},
 		{Key: "_id", Value: objectID},
 	}
 
 	update := bson.D{{Key: "$set",
 		Value: bson.D{
-
+			{Key: "data_type", Value: "fornecedor"},
 			{Key: "fornecedores", Value: produto.Fornecedores},
 			{Key: "updated_at", Value: time.Now().Format(time.RFC3339)},
 		},

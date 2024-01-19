@@ -16,7 +16,7 @@ import (
 
 type ClienteServiceInterface interface {
 	Create(ctx context.Context, Cliente model.Cliente) (*model.Cliente, error)
-	Update(ctx context.Context, ID string, meioToChange *model.Cliente) (bool, error)
+	Update(ctx context.Context, ID string, clienteToChange *model.Cliente) (bool, error)
 	GetByID(ctx context.Context, ID string) (*model.Cliente, error)
 	GetAll(ctx context.Context, filters model.FilterCliente, limit, page int64) (*model.Paginate, error)
 	GetByDocumento(ctx context.Context, Documento string) bool
@@ -33,28 +33,21 @@ func NewClienteervice(mongo_connection mongodb.MongoDBInterface) *ClienteDataSer
 }
 
 func (cat *ClienteDataService) Create(ctx context.Context, Cliente model.Cliente) (*model.Cliente, error) {
-	collection := cat.mdb.GetCollection("clientes")
-
-	dt := time.Now().Format(time.RFC3339)
-
-	Cliente.Enabled = true
-	Cliente.CreatedAt = dt
-	Cliente.UpdatedAt = dt
-	Cliente.ID = primitive.NewObjectID()
-
-	result, err := collection.InsertOne(ctx, Cliente)
+	collection := cat.mdb.GetCollection("cfStore")
+	cli := model.NewCliente(Cliente)
+	result, err := collection.InsertOne(ctx, cli)
 	if err != nil {
 		logger.Error("erro salvar  Cliente", err)
 		return &Cliente, err
 	}
 
-	Cliente.ID = result.InsertedID.(primitive.ObjectID)
+	cli.ID = result.InsertedID.(primitive.ObjectID)
 
-	return &Cliente, nil
+	return cli, nil
 }
 
 func (cat *ClienteDataService) Update(ctx context.Context, ID string, Cliente *model.Cliente) (bool, error) {
-	collection := cat.mdb.GetCollection("clientes")
+	collection := cat.mdb.GetCollection("cfStore")
 
 	opts := options.Update().SetUpsert(true)
 
@@ -68,6 +61,7 @@ func (cat *ClienteDataService) Update(ctx context.Context, ID string, Cliente *m
 	filter := bson.D{
 
 		{Key: "_id", Value: objectID},
+		{Key: "data_type", Value: "cliente"},
 	}
 
 	update := bson.D{{Key: "$set",
@@ -90,7 +84,7 @@ func (cat *ClienteDataService) Update(ctx context.Context, ID string, Cliente *m
 
 func (cat *ClienteDataService) GetByID(ctx context.Context, ID string) (*model.Cliente, error) {
 
-	collection := cat.mdb.GetCollection("clientes")
+	collection := cat.mdb.GetCollection("cfStore")
 
 	Cliente := &model.Cliente{}
 
@@ -102,6 +96,7 @@ func (cat *ClienteDataService) GetByID(ctx context.Context, ID string) (*model.C
 	}
 
 	filter := bson.D{
+		{Key: "data_type", Value: "cliente"},
 		{Key: "_id", Value: objectID},
 	}
 
@@ -115,9 +110,9 @@ func (cat *ClienteDataService) GetByID(ctx context.Context, ID string) (*model.C
 }
 
 func (cat *ClienteDataService) GetAll(ctx context.Context, filters model.FilterCliente, limit, page int64) (*model.Paginate, error) {
-	collection := cat.mdb.GetCollection("clientes")
+	collection := cat.mdb.GetCollection("cfStore")
 
-	query := bson.M{}
+	query := bson.M{"data_type": "cliente"}
 
 	if filters.Nome != "" || filters.Enabled != "" {
 		if filters.Nome != "" {
@@ -162,10 +157,13 @@ func (cat *ClienteDataService) GetAll(ctx context.Context, filters model.FilterC
 
 func (cat *ClienteDataService) GetByDocumento(ctx context.Context, Doc string) bool {
 
-	collection := cat.mdb.GetCollection("clientes")
+	collection := cat.mdb.GetCollection("cfStore")
 
 	// Utilizando o método CountDocuments para verificar a existência
-	filter := bson.D{{Key: "cpf_cnpj", Value: Doc}}
+	filter := bson.D{
+		{Key: "cpf_cnpj", Value: Doc},
+		{Key: "data_type", Value: "cliente"},
+	}
 	count, err := collection.CountDocuments(ctx, filter)
 	if err != nil {
 		logger.Error("erro ao consultar Cliente pelo doc", err)

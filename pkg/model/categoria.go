@@ -12,6 +12,7 @@ import (
 
 type Categoria struct {
 	ID        primitive.ObjectID         `bson:"_id,omitempty" json:"_id,omitempty"`
+	DataType  string                     `bson:"data_type" json:"-"`
 	Nome      string                     `bson:"nome" json:"nome"`
 	Enabled   bool                       `bson:"enabled" json:"enabled"`
 	Produtos  []dto.ProdutosEmCategorias `bson:"produtos" json:"produtos"`
@@ -38,8 +39,8 @@ type FilterCategoria struct {
 
 func NewCategoria(client_request Categoria) *Categoria {
 	return &Categoria{
-		ID: primitive.NewObjectID(),
-
+		ID:        primitive.NewObjectID(),
+		DataType:  "categoria",
 		Nome:      validation.CareString(client_request.Nome),
 		Enabled:   true,
 		CreatedAt: time.Now().String(),

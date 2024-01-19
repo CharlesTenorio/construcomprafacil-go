@@ -11,6 +11,7 @@ import (
 
 type Fornecedor struct {
 	ID            primitive.ObjectID         `bson:"_id" json:"_id"`
+	DataType      string                     `bson:"data_type" json:"-"`
 	IDUsuario     primitive.ObjectID         `bson:"user_id " json:"id_usr"`
 	Nome          string                     `bson:"nome" json:"nome"`
 	Telefone      string                     `bson:"telefone" json:"telefone"`
@@ -47,6 +48,7 @@ type FilterFornecedor struct {
 func NewFornecedor(fonecedor_request Fornecedor) *Fornecedor {
 	return &Fornecedor{
 		ID:        primitive.NewObjectID(),
+		DataType:  "fornecedor",
 		IDUsuario: fonecedor_request.IDUsuario,
 		Nome:      fonecedor_request.Nome,
 		Enabled:   true,

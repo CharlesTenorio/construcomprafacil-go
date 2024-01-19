@@ -39,17 +39,12 @@ func NewOrcamentoService(mongo_connection mongodb.MongoDBInterface, rabbit_conne
 	}
 }
 
-func (fornec *OrcamentoDataService) Create(ctx context.Context, Orcamento model.Orcamento) (*model.Orcamento, error) {
-	collection := fornec.mdb.GetCollection("orcamentos")
+func (orca *OrcamentoDataService) Create(ctx context.Context, Orcamento model.Orcamento) (*model.Orcamento, error) {
+	collection := orca.mdb.GetCollection("cfStore")
+	orcamento := model.NewOrcamento(Orcamento)
 
-	dt := time.Now().Format(time.RFC3339)
-
-	Orcamento.Enabled = true
-	Orcamento.CreatedAt = dt
-	Orcamento.UpdatedAt = dt
-	Orcamento.ID = primitive.NewObjectID()
 	var err error
-	result, err := collection.InsertOne(ctx, Orcamento)
+	result, err := collection.InsertOne(ctx, orcamento)
 	if err != nil {
 		logger.Error("erro salvar  Orcamento", err)
 		return &Orcamento, err
@@ -57,7 +52,7 @@ func (fornec *OrcamentoDataService) Create(ctx context.Context, Orcamento model.
 
 	Orcamento.ID = result.InsertedID.(primitive.ObjectID)
 
-	prds, err := fornec.GetPrdContacao(ctx, &Orcamento)
+	prds, err := orca.GetPrdContacao(ctx, &Orcamento)
 	if err != nil {
 		logger.Error("Erro ao pegar produtos do orcamento", err)
 		return &Orcamento, err
@@ -70,7 +65,7 @@ func (fornec *OrcamentoDataService) Create(ctx context.Context, Orcamento model.
 
 	// Log the JSON string
 	logger.Info(string(productsJSON))
-	send := fornec.SenderePrdOrcamentoFila(ctx, &prds)
+	send := orca.SenderePrdOrcamentoFila(ctx, &prds)
 	if send == false {
 		logger.Error("Erro ao enviar produtos do orcamento para fila", err)
 		return &Orcamento, err
@@ -79,8 +74,8 @@ func (fornec *OrcamentoDataService) Create(ctx context.Context, Orcamento model.
 	return &Orcamento, nil
 }
 
-func (fornec *OrcamentoDataService) Update(ctx context.Context, ID string, OrcamentoToChange *model.Orcamento) (bool, error) {
-	collection := fornec.mdb.GetCollection("orcamentos")
+func (orca *OrcamentoDataService) Update(ctx context.Context, ID string, OrcamentoToChange *model.Orcamento) (bool, error) {
+	collection := orca.mdb.GetCollection("cfStore")
 
 	opts := options.Update().SetUpsert(true)
 
@@ -91,6 +86,7 @@ func (fornec *OrcamentoDataService) Update(ctx context.Context, ID string, Orcam
 	}
 
 	filter := bson.D{
+		{Key: "data_type", Value: "orcamento"},
 		{Key: "_id", Value: objectID},
 	}
 
@@ -128,9 +124,9 @@ func (fornec *OrcamentoDataService) Update(ctx context.Context, ID string, Orcam
 	return true, nil
 }
 
-func (fornec *OrcamentoDataService) GetByID(ctx context.Context, ID string) (*model.Orcamento, error) {
+func (orca *OrcamentoDataService) GetByID(ctx context.Context, ID string) (*model.Orcamento, error) {
 
-	collection := fornec.mdb.GetCollection("orcamentos")
+	collection := orca.mdb.GetCollection("cfStore")
 
 	Orcamento := &model.Orcamento{}
 
@@ -142,6 +138,8 @@ func (fornec *OrcamentoDataService) GetByID(ctx context.Context, ID string) (*mo
 	}
 
 	filter := bson.D{
+
+		{Key: "data_type", Value: "orcamento"},
 		{Key: "_id", Value: objectID},
 	}
 
@@ -154,10 +152,10 @@ func (fornec *OrcamentoDataService) GetByID(ctx context.Context, ID string) (*mo
 	return Orcamento, nil
 }
 
-func (fornec *OrcamentoDataService) GetAll(ctx context.Context, filters model.FilterOrcamento, limit, page int64) (*model.Paginate, error) {
-	collection := fornec.mdb.GetCollection("orcamentos")
+func (orca *OrcamentoDataService) GetAll(ctx context.Context, filters model.FilterOrcamento, limit, page int64) (*model.Paginate, error) {
+	collection := orca.mdb.GetCollection("cfStore")
 
-	query := bson.M{}
+	query := bson.M{"data_type": "cliente"}
 
 	if filters.DataInical != "" && filters.DataFinal == "" {
 		query["data_solicitacao"] = bson.M{
@@ -202,9 +200,9 @@ func (fornec *OrcamentoDataService) GetAll(ctx context.Context, filters model.Fi
 
 	return pagination, nil
 }
-func (fornec *OrcamentoDataService) GetByCnpj(ctx context.Context, Cnpj string) bool {
+func (orca *OrcamentoDataService) GetByCnpj(ctx context.Context, Cnpj string) bool {
 
-	collection := fornec.mdb.GetCollection("orcamentos")
+	collection := orca.mdb.GetCollection("cfStore")
 
 	// Utilizando o método CountDocuments para verificar a existência
 	filter := bson.D{{Key: "cnpj", Value: Cnpj}}
@@ -218,7 +216,7 @@ func (fornec *OrcamentoDataService) GetByCnpj(ctx context.Context, Cnpj string) 
 	return count > 0
 }
 
-func (fornec *OrcamentoDataService) EnviarParaFila(ctx context.Context, fila *dto.OrcamentoFilaPrdFornecedor) (bool, error) {
+func (orca *OrcamentoDataService) EnviarParaFila(ctx context.Context, fila *dto.OrcamentoFilaPrdFornecedor) (bool, error) {
 
 	data, err := json.Marshal(fila)
 	if err != nil {
@@ -231,7 +229,7 @@ func (fornec *OrcamentoDataService) EnviarParaFila(ctx context.Context, fila *dt
 		ContentType: "application/json; charset=utf-8",
 	}
 
-	err = fornec.rabbit_mq.SenderRb(ctx, "QUEUE_PRD_PARA_FORNECEDORES", msg)
+	err = orca.rabbit_mq.SenderRb(ctx, "QUEUE_PRD_PARA_FORNECEDORES", msg)
 	if err != nil {
 		logger.Error("Erro ao envair produtos do orcamento pra faila ", err)
 		return false, err
@@ -240,8 +238,8 @@ func (fornec *OrcamentoDataService) EnviarParaFila(ctx context.Context, fila *dt
 	return true, nil
 }
 
-func (fornec *OrcamentoDataService) GetToQueuePrdToFornec(ctx context.Context, ID string) (*dto.OrcamentoFilaPrdFornecedor, error) {
-	fetchedOrcamento, err := fornec.GetByID(ctx, ID)
+func (orca *OrcamentoDataService) GetToQueuePrdToFornec(ctx context.Context, ID string) (*dto.OrcamentoFilaPrdFornecedor, error) {
+	fetchedOrcamento, err := orca.GetByID(ctx, ID)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +260,7 @@ func (fornec *OrcamentoDataService) GetToQueuePrdToFornec(ctx context.Context, I
 
 	return &orcamentoFila, nil
 }
-func (fornec *OrcamentoDataService) GetPrdContacao(ctx context.Context, Orcamento *model.Orcamento) (dto.ProdutoEnviadoParaFilaDeOrcamentoDTO, error) {
+func (orca *OrcamentoDataService) GetPrdContacao(ctx context.Context, Orcamento *model.Orcamento) (dto.ProdutoEnviadoParaFilaDeOrcamentoDTO, error) {
 	var prd dto.ProdutoEnvidadosParaContacaoDTO
 	var prds []dto.ProdutoEnvidadosParaContacaoDTO
 	for _, produto := range Orcamento.ProdutosContacao {
@@ -279,7 +277,7 @@ func (fornec *OrcamentoDataService) GetPrdContacao(ctx context.Context, Orcament
 	// You can return nil as the second parameter if there is no error
 	return orcamentoPrdFila, nil
 }
-func (fornec *OrcamentoDataService) SenderePrdOrcamentoFila(ctx context.Context, orcamentoPrdsFila *dto.ProdutoEnviadoParaFilaDeOrcamentoDTO) bool {
+func (orca *OrcamentoDataService) SenderePrdOrcamentoFila(ctx context.Context, orcamentoPrdsFila *dto.ProdutoEnviadoParaFilaDeOrcamentoDTO) bool {
 	data, err := json.Marshal(orcamentoPrdsFila)
 	if err != nil {
 		logger.Error("Erro ao converter OrcamentoFila para []byte: ", err)
@@ -291,12 +289,12 @@ func (fornec *OrcamentoDataService) SenderePrdOrcamentoFila(ctx context.Context,
 		ContentType: "application/json; charset=utf-8",
 	}
 
-	err = fornec.rabbit_mq.Connect()
+	err = orca.rabbit_mq.Connect()
 	if err != nil {
 		logger.Error("deu ruim na conexao como RabbitMQ", err)
 	}
 
-	err = fornec.rabbit_mq.SenderRb(ctx, "prd_para_cotacao", msg)
+	err = orca.rabbit_mq.SenderRb(ctx, "prd_para_cotacao", msg)
 	if err != nil {
 		logger.Error("Erro ao envair produtos do orcamento pra faila ", err)
 		return false

@@ -8,6 +8,7 @@ import (
 
 type Compra struct {
 	ID          primitive.ObjectID `bson:"_id" json:"_id"`
+	DataType    string             `bson:"data_type" json:"-"`
 	Valor       string             `bson:"valor" json:"valor"`
 	Data        time.Time          `bson:"data" json:"data"`
 	TituloPagar []struct {

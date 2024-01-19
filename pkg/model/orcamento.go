@@ -9,6 +9,7 @@ import (
 
 type Orcamento struct {
 	ID                   primitive.ObjectID                    `bson:"_id" json:"_id"`
+	DataType             string                                `bson:"data_type" json:"-"`
 	ClienteID            primitive.ObjectID                    `bson:"cliente_id" json:"cliente_id"`
 	Descricao            string                                `bson:"descricao" json:"descricao"`
 	DataSolicitacao      time.Time                             `bson:"data_solicitacao" json:"data_solicitacao"`
@@ -29,6 +30,7 @@ type Orcamento struct {
 
 type FilterOrcamento struct {
 	OrcamentoID       string
+	DataType          string
 	ClienteID         string
 	FornecedorID      string
 	DataEnvio         time.Time
@@ -43,4 +45,15 @@ type OrcamentoResult struct {
 	OrcamentoID   string
 	MeioPagamento string
 	Total         float64
+}
+
+func NewOrcamento(orcamento_request Orcamento) *Orcamento {
+	return &Orcamento{
+		ID:               primitive.NewObjectID(),
+		DataType:         "orcamento",
+		ClienteID:        orcamento_request.ClienteID,
+		StatusOrecamento: "enviado para contacao",
+		Enabled:          true,
+		CreatedAt:        time.Now().String(),
+	}
 }

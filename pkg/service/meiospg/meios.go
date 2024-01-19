@@ -33,7 +33,7 @@ func NewMeioPgService(mongo_connection mongodb.MongoDBInterface) *MeioPgDataServ
 }
 
 func (mpg *MeioPgDataService) Create(ctx context.Context, meiopg model.MeioPagamento) (*model.MeioPagamento, error) {
-	collection := mpg.mdb.GetCollection("meiospagamentos")
+	collection := mpg.mdb.GetCollection("cfStore")
 
 	meiopg.ID = primitive.NewObjectID()
 
@@ -56,7 +56,7 @@ func (mpg *MeioPgDataService) Create(ctx context.Context, meiopg model.MeioPagam
 }
 
 func (mpg *MeioPgDataService) Update(ctx context.Context, ID string, meiopg *model.MeioPagamento) (bool, error) {
-	collection := mpg.mdb.GetCollection("meiospagamentos")
+	collection := mpg.mdb.GetCollection("cfStore")
 
 	opts := options.Update().SetUpsert(true)
 
@@ -92,7 +92,7 @@ func (mpg *MeioPgDataService) Update(ctx context.Context, ID string, meiopg *mod
 
 func (mpg *MeioPgDataService) GetByID(ctx context.Context, ID string) (*model.MeioPagamento, error) {
 
-	collection := mpg.mdb.GetCollection("meiospagamentos")
+	collection := mpg.mdb.GetCollection("cfStore")
 
 	meiopg := &model.MeioPagamento{}
 
@@ -117,7 +117,7 @@ func (mpg *MeioPgDataService) GetByID(ctx context.Context, ID string) (*model.Me
 }
 
 func (mpg *MeioPgDataService) GetAll(ctx context.Context, filters model.FilterMeioPg, limit, page int64) (*model.Paginate, error) {
-	collection := mpg.mdb.GetCollection("meiospagamentos")
+	collection := mpg.mdb.GetCollection("cfStore")
 
 	query := bson.M{}
 
