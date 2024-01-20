@@ -36,13 +36,14 @@ func NewCategoriaervice(mongo_connection mongodb.MongoDBInterface) *CategoriaDat
 
 func (cat *CategoriaDataService) Create(ctx context.Context, categoria model.Categoria) (*model.Categoria, error) {
 	collection := cat.mdb.GetCollection("cfStore")
+	cate := model.NewCategoria(categoria)
 
-	for i := range categoria.Produtos {
-		categoria.Produtos[i].ID = primitive.NewObjectID()
-		categoria.Produtos[i].Enabled = true
+	for i := range cate.Produtos {
+		cate.Produtos[i].ID = primitive.NewObjectID()
+		cate.Produtos[i].Enabled = true
 	}
-	categoria.DataType = "categoria"
-	result, err := collection.InsertOne(ctx, categoria)
+
+	result, err := collection.InsertOne(ctx, cate)
 	if err != nil {
 		logger.Error("erro salvar  categoria", err)
 		return &categoria, err
@@ -174,11 +175,10 @@ func (cat *CategoriaDataService) ListProduto(ctx context.Context, categoriaID st
 
 	// Consulta a categoria especificada
 	filter := bson.D{
-
+		{Key: "data_type", Value: "categoria"},
 		{Key: "_id", Value: categoriaObjectID}}
 	projection := bson.D{
 		{Key: "Produtos", Value: 1},
-		{Key: "data_type", Value: "categoria"},
 	}
 
 	var categoria model.Categoria

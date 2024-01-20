@@ -43,6 +43,7 @@ func NewCategoria(client_request Categoria) *Categoria {
 		DataType:  "categoria",
 		Nome:      validation.CareString(client_request.Nome),
 		Enabled:   true,
+		Produtos:  client_request.Produtos,
 		CreatedAt: time.Now().String(),
 	}
 }

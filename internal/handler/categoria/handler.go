@@ -37,7 +37,8 @@ func createCategoria(service categoria.CategoriaServiceInterface) http.HandlerFu
 			return
 		}
 
-		_, err = service.Create(r.Context(), *categoria)
+		cat := model.NewCategoria(*categoria)
+		_, err = service.Create(r.Context(), *cat)
 		if err != nil {
 			logger.Error("erro ao acessar a camada de service do mpg", err)
 			http.Error(w, "Error ou salvar categoria"+err.Error(), http.StatusInternalServerError)
