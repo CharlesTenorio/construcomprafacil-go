@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/katana/back-end/orcafacil-go/internal/config"
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
+	hand_catalago "github.com/katana/back-end/orcafacil-go/internal/handler/catalago"
 	hand_categoria "github.com/katana/back-end/orcafacil-go/internal/handler/categoria"
 	hand_cliente "github.com/katana/back-end/orcafacil-go/internal/handler/cliente"
 	hand_fornec "github.com/katana/back-end/orcafacil-go/internal/handler/fornecedor"
@@ -16,8 +19,11 @@ import (
 
 	"github.com/katana/back-end/orcafacil-go/pkg/adapter/mongodb"
 	"github.com/katana/back-end/orcafacil-go/pkg/adapter/rabbitmq"
+	"github.com/katana/back-end/orcafacil-go/pkg/adapter/redisdb"
 
 	"github.com/katana/back-end/orcafacil-go/pkg/server"
+	"github.com/katana/back-end/orcafacil-go/pkg/service/catalagoprd"
+	service_catalago "github.com/katana/back-end/orcafacil-go/pkg/service/catalagoprd"
 	service_usr "github.com/katana/back-end/orcafacil-go/pkg/service/user"
 
 	service_categoria "github.com/katana/back-end/orcafacil-go/pkg/service/categoria"
@@ -50,6 +56,7 @@ func main() {
 
 	mogDbConn := mongodb.New(conf)
 	rbtMQConn := rabbitmq.NewRabbitMQ(fila, conf)
+	rdisConn := redisdb.NewRedisClient(conf)
 	usr_service := service_usr.NewUsuarioservice(mogDbConn)
 	meiopg_service := service_meiopg.NewMeioPgService(mogDbConn)
 	categoria_service := service_categoria.NewCategoriaervice(mogDbConn)
@@ -58,6 +65,7 @@ func main() {
 	fornec_service := service_fornec.NewFornecedorervice(mogDbConn)
 	cli_service := service_cliente.NewClienteervice(mogDbConn)
 	orca_service := service_orcamento.NewOrcamentoService(mogDbConn, rbtMQConn)
+	catalago_service := service_catalago.NewCatalagoService(mogDbConn, rdisConn)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -82,6 +90,12 @@ func main() {
 	hand_fornec.RegisterFornecedorPIHandlers(r, fornec_service)
 	hand_cliente.RegisterClientePIHandlers(r, cli_service)
 	hand_orca.RegisterOrcamentoPIHandlers(r, orca_service)
+	hand_catalago.RegisterCatalogoPIHandlers(r, catalago_service)
+
+	catalogService := catalagoprd.NewCatalagoService(mogDbConn, rdisConn)
+
+	// Inicie o worker em uma goroutine
+	go startWorker(catalogService)
 
 	srv := server.NewHTTPServer(r, conf)
 
@@ -100,4 +114,36 @@ func healthcheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"MSG": "Server Ok", "codigo": 200}`))
+}
+
+func startWorker(catalogService catalagoprd.CatalagoServiceInterface) {
+	// Crie um canal para sinalizar quando o worker deve parar
+	stopCh := make(chan struct{})
+
+	// Inicie o worker em uma goroutine
+	go func() {
+		// Loop infinito para executar a função SalveRedis a cada 5 minutos
+		for {
+			select {
+			case <-stopCh:
+				// Sinal recebido para parar o worker
+				return
+			default:
+				// Execute a função SalveRedis
+				_, err := catalogService.SalveRedis(context.Background())
+				if err != nil {
+					logger.Error("Erro ao executar SalveRedis:", err)
+				} else {
+					logger.Info("SalveRedis executado com sucesso")
+				}
+
+				// Aguarde 5 minutos antes de executar novamente
+				time.Sleep(5 * time.Minute)
+			}
+		}
+	}()
+
+	// Aguarde um sinal para parar o worker (pode ser um sinal do sistema operacional, por exemplo)
+	<-stopCh
+	log.Println("Worker parado")
 }

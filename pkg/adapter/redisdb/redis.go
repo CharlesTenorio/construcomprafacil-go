@@ -21,7 +21,7 @@ type redis_client struct {
 }
 
 func NewRedisClient(conf *config.Config) RedisClientInterface {
-	opt, err := redis.ParseURL(conf.RedisConfig.RDB_HOST)
+	opt, err := redis.ParseURL(conf.RedisConfig.RDB_DSN)
 	if err != nil {
 		log.Fatal(err)
 	}

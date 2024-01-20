@@ -6,7 +6,7 @@ import (
 
 	"github.com/katana/back-end/orcafacil-go/internal/config/logger"
 	"github.com/katana/back-end/orcafacil-go/pkg/adapter/mongodb"
-	rd "github.com/katana/back-end/orcafacil-go/pkg/adapter/redis"
+	rd "github.com/katana/back-end/orcafacil-go/pkg/adapter/redisdb"
 	"github.com/katana/back-end/orcafacil-go/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -15,7 +15,7 @@ import (
 type CatalagoServiceInterface interface {
 	SalveRedis(ctx context.Context) (bool, error)
 	LerRedis(ctx context.Context, limit, page int64) (*model.Paginate, error)
-	ListProduto(ctx context.Context) (*[]model.Categoria, error)
+	ListProduto(ctx context.Context) ([]model.Categoria, error)
 }
 
 type CatalagoDataService struct {
